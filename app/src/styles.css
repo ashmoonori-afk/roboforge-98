@@ -1,0 +1,225 @@
+/* RoboForge 98 — desktop shell on top of 98.css */
+
+:root {
+  --teal: #008080;
+  --silver: #c0c0c0;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  font-size: 12px;
+}
+
+body { background: var(--teal); }
+
+.rf-desktop {
+  position: absolute;
+  inset: 0;
+  background: var(--teal);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ---- windows ---- */
+.rf-window { box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35); }
+.rf-window .window-body { margin: 0; padding: 6px; box-sizing: border-box; }
+.rf-window .title-bar-text { font-weight: bold; }
+
+.rf-dim { color: #4d4d4d; }
+.rf-tag {
+  display: inline-block;
+  min-width: 30px;
+  padding: 0 2px;
+  margin-right: 2px;
+  text-align: center;
+  background: #000080;
+  color: #fff;
+  font-size: 10px;
+}
+
+/* ---- parts bin ---- */
+.rf-bin { height: 150px; overflow-y: auto; }
+.rf-bin-item { cursor: grab; padding: 1px 2px; }
+.rf-bin-item:active { cursor: grabbing; }
+.rf-bin-item:hover { background: #000080; color: #fff; }
+.rf-bin-item:hover .rf-dim { color: #cfcfcf; }
+
+/* ---- 3D viewport ---- */
+.rf-canvas-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 150px;
+  background: #0b0e14;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+}
+.rf-canvas-wrap canvas { display: block; width: 100% !important; height: 100% !important; }
+.rf-canvas-tag {
+  position: absolute;
+  left: 6px; bottom: 6px;
+  color: #9fb3c8;
+  font-size: 11px;
+  pointer-events: none;
+  text-shadow: 0 1px 2px #000;
+}
+.rf-drivebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* ---- microprocessor pins ---- */
+.rf-mcu-head { display: flex; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.rf-pins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+  background: #fff;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  max-height: 168px;
+  overflow-y: auto;
+}
+.rf-pin {
+  width: 58px;
+  height: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--silver);
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1.1;
+}
+.rf-pin:hover { outline: 1px dotted #000; }
+.rf-pin-id { font-weight: bold; }
+.rf-pin-part {
+  background: #000080; color: #fff; font-size: 9px; padding: 0 2px; margin-top: 1px;
+}
+.rf-pin-used { background: #b6e3b6; border-color: #fff #2e7d32 #2e7d32 #fff; }
+.rf-pin-power { background: #ffe0a3; }
+
+/* ---- properties + spec tables ---- */
+.rf-props fieldset { margin-bottom: 8px; }
+.rf-spec { width: 100%; border-collapse: collapse; }
+.rf-spec td { padding: 1px 4px; vertical-align: top; }
+.rf-spec td:first-child { color: #333; white-space: nowrap; }
+.rf-spec td:last-child { text-align: right; }
+
+/* ---- suggestions ---- */
+.rf-sug { padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rf-src {
+  display: inline-block; width: 14px; text-align: center; margin-right: 4px;
+  color: #fff; font-weight: bold; font-size: 10px;
+}
+.rf-src-A { background: #b8860b; }  /* Amazon */
+.rf-src-N { background: #1f6f8b; }  /* Nexar  */
+.rf-src-M { background: #6a1b9a; }  /* Mouser */
+
+/* ---- prompt examples ---- */
+.rf-examples { margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
+.rf-link {
+  background: none; border: none; padding: 0; text-align: left;
+  color: #00188f; text-decoration: underline; cursor: pointer; font-size: 11px;
+  min-width: 0; box-shadow: none;
+}
+
+/* ---- taskbar ---- */
+.rf-taskbar {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  background: var(--silver);
+  border-top: 2px solid #fff;
+}
+.rf-start { font-weight: bold; display: flex; align-items: center; gap: 4px; }
+.rf-start-logo { color: #c00; }
+.rf-status {
+  flex: 1;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  background: var(--silver);
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rf-tray {
+  padding: 0 8px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+}
+
+/* ---- tooltip ---- */
+.rf-tooltip { box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4); }
+.rf-tooltip .title-bar { background: #000080; }
+
+/* ---- resize grip ---- */
+.rf-resize {
+  position: absolute; right: 0; bottom: 0;
+  width: 16px; height: 16px; cursor: nwse-resize; z-index: 6;
+  background: linear-gradient(135deg,
+    transparent 0 5px, #707070 5px 6px, transparent 6px 8px,
+    #707070 8px 9px, transparent 9px 11px, #707070 11px 12px, transparent 12px);
+}
+
+/* ---- viewport fills its (resizable) window ---- */
+.rf-viewport { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+/* ---- activity log ---- */
+.rf-logwrap {
+  flex: 1; min-height: 0; overflow-y: auto;
+  background: #fff; border: 2px solid; border-color: #808080 #fff #fff #808080;
+  padding: 3px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px;
+}
+.rf-log { display: flex; gap: 5px; padding: 1px 0; align-items: baseline; }
+.rf-log-t { color: #888; }
+.rf-log-k { font-weight: bold; min-width: 34px; }
+.rf-log-x { flex: 1; word-break: break-word; }
+.rf-log-gen .rf-log-k { color: #1971c2; }
+.rf-log-wire .rf-log-k { color: #2f9e44; }
+.rf-log-warn .rf-log-k { color: #c92a2a; }
+.rf-log-info .rf-log-k { color: #555; }
+
+/* ---- microprocessor: map + wiring diagram ---- */
+.rf-mcu { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.rf-mcu-cols { flex: 1; min-height: 0; display: flex; gap: 6px; }
+.rf-mcu-col { flex: 1; min-width: 0; display: flex; flex-direction: column; margin: 0; padding: 2px 4px; }
+.rf-mcu-col svg { flex: 1; min-height: 0; width: 100%; background: #fff; border: 1px solid #b0b0b0; }
+
+/* ---- viewport camera nav ---- */
+.rf-camnav {
+  position: absolute; top: 6px; right: 6px; z-index: 4;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: rgba(192, 192, 192, 0.86); border: 1px solid #5a5a5a; padding: 3px;
+}
+.rf-camnav-row { display: flex; gap: 2px; }
+.rf-camnav button {
+  min-width: 22px; min-height: 20px; padding: 0; font-size: 12px; line-height: 1;
+}
+
+/* ---- activity log: copy/clear bar + selectable text ---- */
+.rf-logroot { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.rf-logbar { display: flex; align-items: center; gap: 4px; margin-bottom: 3px; }
+.rf-logbar button { font-size: 11px; min-height: 18px; padding: 0 6px; }
+.rf-logwrap { cursor: text; }
+.rf-logwrap, .rf-logwrap * { user-select: text; -webkit-user-select: text; }
+.rf-log-note .rf-log-k { color: #1c7ed6; }   /* assumptions = calm blue NOTE, not an error */
