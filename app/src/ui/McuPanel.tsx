@@ -1,7 +1,7 @@
 import { boards, boardById } from '../data/boards'
 import { pinUsage } from '../core/mcu'
 import { useStore } from '../state/store'
-import { PinMap } from './PinMap'
+import { Breadboard } from './Breadboard'
 import { WiringDiagram } from './WiringDiagram'
 
 export function McuPanel() {
@@ -27,8 +27,8 @@ export function McuPanel() {
 
       <div className="rf-mcu-cols">
         <fieldset className="rf-mcu-col">
-          <legend>Microprocessor map</legend>
-          <PinMap />
+          <legend>Breadboard — MCU inserted</legend>
+          <Breadboard />
         </fieldset>
         <fieldset className="rf-mcu-col">
           <legend>Wiring diagram</legend>
@@ -37,7 +37,7 @@ export function McuPanel() {
       </div>
 
       <p className="rf-dim" style={{ margin: '2px 0 0' }}>
-        Drop a part onto a pin in the <b>map</b>; the <b>wiring diagram</b> updates live.
+        Drop a part onto a pin column in the <b>breadboard</b>; the <b>wiring diagram</b> updates live.
         A PWM servo needs a ~PWM pin, I2C needs an I2C pin. Click a wired pin to remove.
       </p>
     </div>
