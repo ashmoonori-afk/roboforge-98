@@ -223,3 +223,9 @@ body { background: var(--teal); }
 .rf-logwrap { cursor: text; }
 .rf-logwrap, .rf-logwrap * { user-select: text; -webkit-user-select: text; }
 .rf-log-note .rf-log-k { color: #1c7ed6; }   /* assumptions = calm blue NOTE, not an error */
+
+/* ---- export bar + prompt controls ---- */
+.rf-exportbar { display: flex; align-items: center; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+.rf-exportbar button { font-size: 11px; min-height: 18px; padding: 0 6px; }
+.rf-prompt-controls { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.rf-prompt-controls select { min-height: 20px; }

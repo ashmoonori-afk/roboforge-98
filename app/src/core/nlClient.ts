@@ -42,11 +42,11 @@ export interface NlResult {
  * endpoint is unavailable (e.g. production/static build) so the caller can fall
  * back to the rule-based parser.
  */
-export async function designFromCli(prompt: string): Promise<NlResult> {
+export async function designFromCli(prompt: string, mode: 'fast' | 'quality' = 'quality'): Promise<NlResult> {
   const res = await fetch('/api/nl-design', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, mode }),
   })
   if (!res.ok) throw new Error(`endpoint ${res.status}`)
   const data = (await res.json()) as {

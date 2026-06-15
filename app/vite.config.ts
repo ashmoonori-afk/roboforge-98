@@ -19,10 +19,10 @@ const SPEC_INSTRUCTION = [
   'Units are meters; total height ~1.5-2.5; rest the lowest point near y=0 (on the ground). Use "spin" (rad/s) for wheels/gears/rotors and "swing" for limbs/arms. Transforms compose through "children". Output JSON only.',
 ].join('\n')
 
-function runClaude(prompt: string): Promise<string> {
+function runClaude(prompt: string, model: string): Promise<string> {
   return new Promise((resolve, reject) => {
     // Opus for best extraction quality; still skip MCP/global settings to cut startup overhead.
-    const child = spawn('claude', ['-p', '--model', 'opus', '--strict-mcp-config', '--setting-sources', 'project', '--output-format', 'json'], {
+    const child = spawn('claude', ['-p', '--model', model, '--strict-mcp-config', '--setting-sources', 'project', '--output-format', 'json'], {
       shell: process.platform === 'win32',
       windowsHide: true,
     })
@@ -60,9 +60,14 @@ function nlCliPlugin() {
         req.on('end', async () => {
           res.setHeader('content-type', 'application/json')
           try {
-            const { prompt } = JSON.parse(body || '{}')
+            const { prompt, mode } = JSON.parse(body || '{}')
             if (!prompt || typeof prompt !== 'string') throw new Error('missing prompt')
-            const raw = await runClaude(`${SPEC_INSTRUCTION}\n\nUSER GOAL: ${prompt}`)
+            const fast = mode === 'fast'
+            const model = fast ? 'haiku' : 'opus'
+            const detail = fast
+              ? 'FAST MODE: keep the scene simple, 10-16 nodes.'
+              : 'QUALITY MODE: detailed scene, 24-40 nodes.'
+            const raw = await runClaude(`${SPEC_INSTRUCTION}\n${detail}\n\nUSER GOAL: ${prompt}`, model)
             const wrap = JSON.parse(raw) as { result?: string; duration_ms?: number }
             const parsed = extractJson(typeof wrap.result === 'string' ? wrap.result : raw) as Record<string, unknown>
             const spec = parsed.spec ?? parsed

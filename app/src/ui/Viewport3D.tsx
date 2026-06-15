@@ -7,6 +7,9 @@ import { CameraController } from './CameraController'
 import { SurgicalModel } from './models/SurgicalModel'
 import { AutomatonModel } from './models/AutomatonModel'
 import { SceneRenderer } from './SceneRenderer'
+import { robotHolder } from './robotRef'
+import { exportGLB, exportSTL } from './exporters3d'
+import { toBomCsv, toDesignJson, download } from '../core/export'
 import { useStore } from '../state/store'
 import { partById } from '../data/parts'
 import {
@@ -165,15 +168,17 @@ export function Viewport3D() {
           />
           <directionalLight position={[-5, 3, -3]} intensity={0.35} />
 
-          {scene
-            ? <SceneRenderer scene={scene} driving={driving} />
-            : isMultiArm
-            ? <SurgicalModel driving={driving} arms={design?.spec.armCount ?? 4} />
-            : isAutomaton
-              ? <AutomatonModel driving={driving} clockwork={clockwork} />
-              : isArm
-                ? <ArmModel driving={driving} />
-                : <RoverModel driving={driving} />}
+          <group ref={(g) => { robotHolder.current = g }}>
+            {scene
+              ? <SceneRenderer scene={scene} driving={driving} />
+              : isMultiArm
+              ? <SurgicalModel driving={driving} arms={design?.spec.armCount ?? 4} />
+              : isAutomaton
+                ? <AutomatonModel driving={driving} clockwork={clockwork} />
+                : isArm
+                  ? <ArmModel driving={driving} />
+                  : <RoverModel driving={driving} />}
+          </group>
 
           <ContactShadows position={[0, 0, 0]} opacity={0.55} scale={11} blur={2.4} far={4} resolution={1024} color="#11161d" />
           <gridHelper args={[16, 16, '#7c8896', '#5b6573']} position={[0, -0.002, 0]} />
@@ -210,6 +215,13 @@ export function Viewport3D() {
         <span className="rf-dim">
           {driving ? 'Simulating motion…' : 'Press to run the real-time mobility demo. Drag to orbit.'}
         </span>
+      </div>
+      <div className="rf-exportbar">
+        <span className="rf-dim">Export / handoff:</span>
+        <button disabled={!design} onClick={() => { if (exportGLB(scene?.name ?? design?.archetype.name ?? 'robot')) pushLog('info', 'exported .glb (3D mesh)') }}>.glb</button>
+        <button disabled={!design} onClick={() => { if (exportSTL(scene?.name ?? design?.archetype.name ?? 'robot')) pushLog('info', 'exported .stl (3D print)') }}>.stl</button>
+        <button disabled={!design} onClick={() => { if (design) { download('bom.csv', toBomCsv(design), 'text/csv'); pushLog('info', 'exported BOM.csv') } }}>BOM.csv</button>
+        <button disabled={!design} onClick={() => { if (design) { download('design.json', toDesignJson(design, scene), 'application/json'); pushLog('info', 'exported design.json') } }}>design.json</button>
       </div>
     </div>
   )

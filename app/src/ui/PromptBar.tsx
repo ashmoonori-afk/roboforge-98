@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { extractSpec, matchArchetype } from '../core/nl'
 import { sizeDesign } from '../core/sizing'
 import { designFromCli } from '../core/nlClient'
@@ -15,6 +15,12 @@ const EXAMPLES = [
 export function PromptBar() {
   const [text, setText] = useState(EXAMPLES[0])
   const [busy, setBusy] = useState(false)
+  const [mode, setMode] = useState<'fast' | 'quality'>('quality')
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('p')
+    if (p) setText(p)
+  }, [])
   const setDesign = useStore((s) => s.setDesign)
   const setStatus = useStore((s) => s.setStatus)
   const pushLog = useStore((s) => s.pushLog)
@@ -33,7 +39,7 @@ export function PromptBar() {
     setDesign({ spec, archetype: matchArchetype(spec), sizing: sizeDesign(spec) })
     pushLog('gen', 'instant draft (rule-based archetype) — refining via local CLI…')
     try {
-      const r = await designFromCli(text)
+      const r = await designFromCli(text, mode)
       spec = r.spec
       if (r.scene) {
         setScene(r.scene)
@@ -66,9 +72,23 @@ export function PromptBar() {
         rows={3}
         style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box' }}
       />
-      <div style={{ marginTop: 6 }}>
+      <div className="rf-prompt-controls">
         <button onClick={generate} disabled={busy}>
           {busy ? '… generating' : '▶ Generate design'}
+        </button>
+        <select value={mode} onChange={(e) => setMode(e.target.value as 'fast' | 'quality')} title="fast = quick + cheap; quality = detailed">
+          <option value="fast">fast</option>
+          <option value="quality">quality</option>
+        </select>
+        <button
+          title="Copy a shareable link with this prompt"
+          onClick={() => {
+            const url = `${window.location.origin}${window.location.pathname}?p=${encodeURIComponent(text)}`
+            if (navigator.clipboard) navigator.clipboard.writeText(url)
+            setStatus('Shareable link copied to clipboard.')
+          }}
+        >
+          Share
         </button>
       </div>
       <div className="rf-examples">

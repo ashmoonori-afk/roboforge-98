@@ -64,6 +64,17 @@ Start with `PRD.md` (what & why) → `ARCHITECTURE.md` (how it fits together) �
 > Convention: claims that are not yet verified are tagged **`UNVERIFIED`** or **`ASSUMPTION`**
 > inline, per project rules. Numbers carry a source or a calculation basis.
 
+## Export & handoff
+
+Any generated design exports to **.glb / .stl** (3D), **BOM.csv** (buyable parts), and
+**design.json** (spec + scene) — RoboForge is the fast concept front-end that hands off to real
+CAD / print / cart. **Fast/Quality** generation modes and shareable `?p=` links are built in.
+
+## Strategy
+
+Positioning, ICP, business model and the risk-hedge design are in
+[`docs/STRATEGY.md`](docs/STRATEGY.md).
+
 ## License
 
 Released under the [MIT License](LICENSE). © 2026 ashmoonori-afk.
