@@ -58,9 +58,9 @@ function normalizePlan(raw: unknown): DesignPlan | null {
   })
   const connections = arr(r.connections)
     .slice(0, 120)
-    .map((x) => {
+    .map((x, i) => {
       const o = x as Record<string, unknown>
-      return { from: str(o.from), pin: str(o.pin), net: str(o.net) || undefined, signal: str(o.signal) || undefined }
+      return { id: `w${i + 1}_${str(o.from)}`, from: str(o.from), pin: str(o.pin), net: str(o.net) || undefined, signal: str(o.signal) || undefined }
     })
     .filter((x) => x.from && x.pin)
   const steps = arr(r.steps).filter((x): x is string => typeof x === 'string').slice(0, 14)

@@ -16,7 +16,8 @@ export interface SceneNode {
   metalness: number
   roughness: number
   /** Dynamic part (wheel/gear/rotor): unit axis the part spins about, in the
-   *  node's LOCAL frame. The node's own origin is the rotation centre. */
+   *  SCENE/world frame (the visible hub direction; Y up, forward -Z). The node's
+   *  own origin is the rotation centre (rendered via rotateOnWorldAxis). */
   axis?: [number, number, number]
   /** Signed angular speed (rad/s) about `axis` — sign sets the direction. */
   spinRate?: number

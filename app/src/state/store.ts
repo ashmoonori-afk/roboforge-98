@@ -45,6 +45,7 @@ interface AppState {
   camCmd: CamCmd | null
   scene: SceneSpec | null
   plan: DesignPlan | null
+  planBase: DesignPlan | null   // snapshot of the last AI design, for "reset tweaks"
 
   setDesign: (d: DesignResult) => void
   placePart: (part: Part) => void
@@ -59,6 +60,10 @@ interface AppState {
   cam: (kind: CamKind) => void
   setScene: (scene: SceneSpec | null) => void
   setPlan: (plan: DesignPlan | null) => void
+  /** Tweak the current plan in place (does not touch the reset snapshot). */
+  editPlan: (fn: (p: DesignPlan) => DesignPlan) => void
+  /** Revert tweaks back to the last AI-generated design. */
+  resetPlan: () => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -74,6 +79,7 @@ export const useStore = create<AppState>((set) => ({
   camCmd: null,
   scene: null,
   plan: null,
+  planBase: null,
 
   setDesign: (design) => set({ design }),
   placePart: (part) =>
@@ -99,5 +105,8 @@ export const useStore = create<AppState>((set) => ({
   pushLog: (kind, text) => set((s) => ({ logs: append(s.logs, kind, text) })),
   cam: (kind) => set((s) => ({ camCmd: { kind, seq: (s.camCmd?.seq ?? 0) + 1 } })),
   setScene: (scene) => set({ scene }),
-  setPlan: (plan) => set({ plan }),
+  // snapshot a deep clone so tweaks can never mutate the reset target
+  setPlan: (plan) => set({ plan, planBase: plan ? structuredClone(plan) : null }),
+  editPlan: (fn) => set((s) => (s.plan ? { plan: fn(s.plan) } : s)),
+  resetPlan: () => set((s) => ({ plan: s.planBase })),
 }))

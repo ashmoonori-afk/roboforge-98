@@ -276,3 +276,27 @@ a.rf-src { text-decoration: none; cursor: pointer; margin-left: 2px; }
 
 /* ---- sourcing fallback (catalog can't fill a slot → find new parts) ---- */
 .rf-source { white-space: normal; padding: 2px 0; }
+
+/* ---- design tuner (editable specs + wiring) ---- */
+.rf-tuner fieldset { margin-bottom: 6px; }
+.rf-tuner-bar { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
+.rf-tuner-bar button { font-size: 11px; min-height: 18px; padding: 0 6px; }
+.rf-tuner-list { max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+.rf-tuner-row { display: flex; align-items: center; gap: 2px; }
+.rf-in {
+  font-size: 11px; padding: 0 2px; min-height: 18px; min-width: 0;
+  border: 2px solid; border-color: #808080 #fff #fff #808080; background: #fff;
+}
+.rf-in-wide { width: 100%; margin-bottom: 2px; }
+.rf-in-lbl { width: 40px; font-weight: bold; }
+.rf-in-name { flex: 1 1 70px; }
+.rf-in-qty { width: 38px; }
+.rf-in-spec { flex: 2 1 120px; }
+.rf-in-from { flex: 1 1 80px; }
+.rf-in-pin { width: 52px; }
+.rf-in-net { width: 70px; }
+.rf-in-sig { width: 60px; }
+.rf-x {
+  min-height: 18px; min-width: 18px; padding: 0; font-size: 10px; line-height: 1;
+  color: #a00; flex: 0 0 auto;
+}

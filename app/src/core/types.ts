@@ -102,6 +102,7 @@ export interface DesignComponent {
   note?: string
 }
 export interface DesignConnection {
+  id: string         // stable row id (for editing/keys)
   from: string       // component id
   pin: string        // controller pin label
   net?: string       // named net: 5V, GND, I2C_SDA, PWM_M1A ...
