@@ -14,13 +14,13 @@ const SPEC_INSTRUCTION = [
   '"scene" = {"name":string,"nodes":[Node,...]} — a 3D model of the robot from primitives that the app renders directly.',
   'Node = {"shape":"box"|"cylinder"|"sphere"|"cone"|"torus"|"gear"|"group","size":[numbers],"pos":[x,y,z],"rot":[x,y,z],"color":"#hex","metalness":0..1,"roughness":0..1,"spin":[x,y,z]?,"swing":{"axis":"x"|"y"|"z","amp":number,"freq":number}?,"children":[Node]?}.',
   'size by shape: box[w,h,d], cylinder[radiusTop,radiusBottom,height], sphere[r], cone[r,h], torus[r,tube], gear[r,teeth,thickness], group=none.',
-  'Compose a clearly RECOGNIZABLE model (~12-22 nodes); match colour/material (brass gears, white medical housing, black tires, dark joints). Units are meters; height ~1.5-2.5; lowest point near y=0. Use "spin" (rad/s) for wheels/gears/rotors and "swing" for limbs. Output JSON only.',
+  'Compose a clearly RECOGNIZABLE model (~10-16 nodes); match colour/material (brass gears, white medical housing, black tires, dark joints). Units are meters; height ~1.5-2.5; lowest point near y=0. Use "spin" (rad/s) for wheels/gears/rotors and "swing" for limbs. Output JSON only.',
 ].join('\n')
 
 const DESIGN_INSTRUCTION = [
   'You are a robotics design engineer. From the user\'s robot goal, output ONLY one minified JSON',
   'object (no prose, no fences): {"summary":string,"controller":{"name":string,"mcu":string,"pins":[string]},"components":[{"id":string,"name":string,"category":string,"iface":"PWM"|"I2C"|"SPI"|"UART"|"ANALOG"|"DIGITAL"|"POWER"|"GND"|"none","qty":integer,"note":string}],"connections":[{"from":componentId,"pin":controllerPin,"signal":string}],"steps":[string]}.',
-  'Pick a real microcontroller; include the components the robot needs (sensors, motor drivers, actuators, power, regulators, comms); wire EACH electrical component to a specific controller pin in "connections" consistent with its iface; give 4-8 assembly steps. Output JSON only.',
+  'Pick a real microcontroller; include 6-12 components (sensors, motor drivers, actuators, power, regulators, comms); wire EACH electrical component to a specific controller pin in "connections" consistent with its iface; give 4-8 assembly steps. Output JSON only.',
 ].join('\n')
 
 function runClaude(prompt: string, model: string): Promise<string> {

@@ -84,7 +84,14 @@ export interface PlanResult {
  * endpoint is unavailable (e.g. production/static build) so the caller can fall
  * back to the rule-based parser.
  */
+// In-memory caches: re-generating the same prompt returns instantly (latency hedge).
+const nlCache = new Map<string, NlResult>()
+const planCache = new Map<string, PlanResult>()
+
 export async function designFromCli(prompt: string, mode: 'fast' | 'quality' = 'quality'): Promise<NlResult> {
+  const key = `${mode}|${prompt.trim()}`
+  const hit = nlCache.get(key)
+  if (hit) return hit
   const res = await fetch('/api/nl-design', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -95,15 +102,20 @@ export async function designFromCli(prompt: string, mode: 'fast' | 'quality' = '
     ok: boolean; spec?: Record<string, unknown>; scene?: unknown; error?: string; durationMs?: number | null
   }
   if (!data.ok || !data.spec) throw new Error(data.error || 'cli failed')
-  return {
+  const result: NlResult = {
     spec: normalize(data.spec, prompt),
     scene: normalizeScene(data.scene),
     durationMs: data.durationMs ?? null,
   }
+  nlCache.set(key, result)
+  return result
 }
 
 /** LLM engineering design (controller + components + wiring + steps) via /api/design. */
 export async function designPlanFromCli(prompt: string, mode: 'fast' | 'quality' = 'quality'): Promise<PlanResult> {
+  const key = `${mode}|${prompt.trim()}`
+  const hit = planCache.get(key)
+  if (hit) return hit
   const res = await fetch('/api/design', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -112,5 +124,7 @@ export async function designPlanFromCli(prompt: string, mode: 'fast' | 'quality'
   if (!res.ok) throw new Error(`endpoint ${res.status}`)
   const data = (await res.json()) as { ok: boolean; design?: unknown; error?: string; durationMs?: number | null }
   if (!data.ok) throw new Error(data.error || 'cli failed')
-  return { plan: normalizePlan(data.design), durationMs: data.durationMs ?? null }
+  const result: PlanResult = { plan: normalizePlan(data.design), durationMs: data.durationMs ?? null }
+  planCache.set(key, result)
+  return result
 }

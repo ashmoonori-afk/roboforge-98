@@ -37,7 +37,7 @@ export function McuPanel() {
       </div>
 
       <p className="rf-dim" style={{ margin: '2px 0 0' }}>
-        Drop a part onto a pin column — it's <b>assembled on the breadboard</b> and jumper-wired to that pin; the <b>wiring diagram</b> updates live.
+        When the AI designs a build, the breadboard <b>auto-wires it</b>; otherwise drop catalog parts onto pin columns to wire manually. The <b>wiring diagram</b> updates live.
         A PWM servo needs a ~PWM pin, I2C needs an I2C pin. Click a wired pin to remove.
       </p>
     </div>
