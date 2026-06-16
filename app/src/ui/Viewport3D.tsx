@@ -1,5 +1,6 @@
-import type { DragEvent as RDragEvent } from 'react'
-import { Canvas } from '@react-three/fiber'
+import type { DragEvent as RDragEvent, ReactNode } from 'react'
+import { useRef } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, ContactShadows, Environment, SoftShadows, Html } from '@react-three/drei'
 import * as THREE from 'three'
 import { CameraController } from './CameraController'
@@ -16,6 +17,24 @@ const cityHdri = import('@pmndrs/assets/hdri/city.exr') as Promise<{ default: st
 import { useStore } from '../state/store'
 import { partById } from '../data/parts'
 
+// Ground locomotion: when driving a wheeled/tracked robot, roll the whole body
+// forward across the floor and loop — so it actually drives instead of spinning
+// its wheels in place. Wheels keep spinning via their per-node `spin`.
+function DrivingRig({ roll, driving, children }: { roll: boolean; driving: boolean; children: ReactNode }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((_, dt) => {
+    const o = ref.current
+    if (!o) return
+    if (driving && roll) {
+      o.position.z -= Math.min(dt, 0.05) * 1.1   // travel forward
+      if (o.position.z < -3.2) o.position.z = 3.2 // loop back into view
+    } else if (o.position.z !== 0) {
+      o.position.z = 0
+    }
+  })
+  return <group ref={ref}>{children}</group>
+}
+
 export function Viewport3D() {
   const design = useStore((s) => s.design)
   const driving = useStore((s) => s.driving)
@@ -26,6 +45,8 @@ export function Viewport3D() {
   const scene = useStore((s) => s.scene)
   const plan = useStore((s) => s.plan)
   const generating = useStore((s) => s.generating)
+  const lt = design?.spec.locomotionType
+  const roll = lt === 'wheeled_differential' || lt === 'wheeled_omni' || lt === 'tracked'
 
   const onDrop = (e: RDragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -61,7 +82,7 @@ export function Viewport3D() {
 
           <group ref={(g) => { robotHolder.current = g }}>
             {scene
-              ? <SceneRenderer scene={scene} driving={driving} />
+              ? <DrivingRig roll={roll} driving={driving}><SceneRenderer scene={scene} driving={driving} /></DrivingRig>
               : (
                 <Html center className="rf-empty3d">
                   {generating ? (
