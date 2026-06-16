@@ -1,7 +1,7 @@
 import type { DragEvent as RDragEvent } from 'react'
 import { useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, ContactShadows } from '@react-three/drei'
+import { OrbitControls, ContactShadows, Environment, SoftShadows } from '@react-three/drei'
 import * as THREE from 'three'
 import { CameraController } from './CameraController'
 import { SurgicalModel } from './models/SurgicalModel'
@@ -10,6 +10,12 @@ import { SceneRenderer } from './SceneRenderer'
 import { robotHolder } from './robotRef'
 import { exportGLB, exportSTL } from './exporters3d'
 import { toBomCsv, toDesignJson, download } from '../core/export'
+import { EffectComposer, N8AO, Bloom, ToneMapping, SMAA, Vignette } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
+import { suspend } from 'suspend-react'
+
+// Self-hosted CC0 HDRI for image-based lighting (free, @pmndrs/assets MIT).
+const cityHdri = import('@pmndrs/assets/hdri/city.exr') as Promise<{ default: string }>
 import { useStore } from '../state/store'
 import { partById } from '../data/parts'
 import {
@@ -149,7 +155,7 @@ export function Viewport3D() {
   return (
     <div className="rf-viewport">
       <div className="rf-canvas-wrap" onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
-        <Canvas shadows dpr={[1, 2]} camera={{ position: [3.4, 2.5, 4], fov: 48 }}>
+        <Canvas shadows dpr={[1, 2]} gl={{ antialias: false, toneMapping: THREE.NoToneMapping }} camera={{ position: [3.4, 2.5, 4], fov: 48 }}>
           <color attach="background" args={['#9aa6b2']} />
           <fog attach="fog" args={['#9aa6b2', 9, 18]} />
           <hemisphereLight args={['#ffffff', '#404a57', 0.55]} />
@@ -167,6 +173,8 @@ export function Viewport3D() {
             shadow-camera-bottom={-5}
           />
           <directionalLight position={[-5, 3, -3]} intensity={0.35} />
+          <SoftShadows size={24} samples={12} focus={0.85} />
+          <Environment files={(suspend(cityHdri) as { default: string }).default} />
 
           <group ref={(g) => { robotHolder.current = g }}>
             {scene
@@ -184,6 +192,13 @@ export function Viewport3D() {
           <gridHelper args={[16, 16, '#7c8896', '#5b6573']} position={[0, -0.002, 0]} />
           <CameraController />
           <OrbitControls makeDefault enablePan screenSpacePanning minDistance={2.2} maxDistance={13} target={[0, 0.5, 0]} />
+          <EffectComposer multisampling={0}>
+            <N8AO aoRadius={0.6} intensity={1.4} distanceFalloff={1} />
+            <Bloom luminanceThreshold={0.85} intensity={0.55} mipmapBlur />
+            <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+            <SMAA />
+            <Vignette eskil={false} offset={0.25} darkness={0.55} />
+          </EffectComposer>
         </Canvas>
         <div className="rf-canvas-tag">
           {scene
