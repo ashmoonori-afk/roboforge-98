@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { extractSpec, matchArchetype } from '../core/nl'
 import { sizeDesign } from '../core/sizing'
-import { designFromCli } from '../core/nlClient'
+import { designFromCli, designPlanFromCli } from '../core/nlClient'
 import { useStore } from '../state/store'
 
 const EXAMPLES = [
@@ -25,11 +25,13 @@ export function PromptBar() {
   const setStatus = useStore((s) => s.setStatus)
   const pushLog = useStore((s) => s.pushLog)
   const setScene = useStore((s) => s.setScene)
+  const setPlan = useStore((s) => s.setPlan)
 
   const generate = async () => {
     setBusy(true)
     setStatus('Generating… (summoning local CLI)')
     setScene(null)
+    setPlan(null)
     const trimmed = text.trim()
     pushLog('gen', `prompt: "${trimmed.slice(0, 44)}${trimmed.length > 44 ? '…' : ''}"`)
 
@@ -38,6 +40,8 @@ export function PromptBar() {
     // asynchronously when the CLI returns the richer spec + generated 3D scene.
     setDesign({ spec, archetype: matchArchetype(spec), sizing: sizeDesign(spec) })
     pushLog('gen', 'instant draft (rule-based archetype) — refining via local CLI…')
+    // Engineering design runs in parallel with the spec+scene call (separate, reliable endpoints).
+    const planP = designPlanFromCli(text, mode).then((d) => d.plan).catch(() => null)
     try {
       const r = await designFromCli(text, mode)
       spec = r.spec
@@ -60,6 +64,14 @@ export function PromptBar() {
     setDesign({ spec, archetype, sizing })
     const note = spec.ambiguities.length ? ` (${spec.ambiguities.length} assumption)` : ''
     setStatus(`Generated → ${archetype.name}${note}. Press Drive in the viewport.`)
+
+    const plan = await planP
+    if (plan) {
+      setPlan(plan)
+      pushLog('gen', `AI design: ${plan.components.length} components, ${plan.connections.length} connections, ${plan.steps.length} steps`)
+    } else {
+      pushLog('warn', 'AI design unavailable (CLI)')
+    }
     setBusy(false)
   }
 

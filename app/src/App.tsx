@@ -6,6 +6,7 @@ import { Viewport3D } from './ui/Viewport3D'
 import { McuPanel } from './ui/McuPanel'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { PartsSuggestion } from './ui/PartsSuggestion'
+import { AiDesign } from './ui/AiDesign'
 import { Tooltip } from './ui/Tooltip'
 import { Taskbar } from './ui/Taskbar'
 
@@ -29,11 +30,14 @@ export default function App() {
         <McuPanel />
       </Window>
 
-      <Window title="Properties" x={892} y={10} width={316} height={280}>
+      <Window title="Properties" x={892} y={10} width={316} height={206}>
         <PropertiesPanel />
       </Window>
-      <Window title="Parts Suggestion" x={892} y={304} width={316} height={296}>
+      <Window title="Parts Suggestion" x={892} y={228} width={316} height={168}>
         <PartsSuggestion />
+      </Window>
+      <Window title="AI Design Assistant" x={892} y={406} width={316} height={402}>
+        <AiDesign />
       </Window>
 
       <Tooltip />

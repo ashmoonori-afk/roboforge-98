@@ -229,3 +229,10 @@ body { background: var(--teal); }
 .rf-exportbar button { font-size: 11px; min-height: 18px; padding: 0 6px; }
 .rf-prompt-controls { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
 .rf-prompt-controls select { min-height: 20px; }
+
+/* ---- AI design assistant ---- */
+.rf-ai fieldset { margin-bottom: 6px; }
+.rf-ai-sum { margin: 0 0 6px; font-style: italic; }
+.rf-ai-comp { max-height: 116px; overflow-y: auto; }
+.rf-ai-steps { margin: 0; padding-left: 18px; }
+.rf-ai-steps li { margin-bottom: 2px; }

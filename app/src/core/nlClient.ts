@@ -1,4 +1,4 @@
-import type { RequirementsSpec, LocomotionType } from './types'
+import type { RequirementsSpec, LocomotionType, DesignPlan } from './types'
 import { normalizeScene, type SceneSpec } from './scene'
 
 const LOCO: LocomotionType[] = [
@@ -30,9 +30,51 @@ function normalize(raw: Record<string, unknown>, prompt: string): RequirementsSp
   }
 }
 
+function normalizePlan(raw: unknown): DesignPlan | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const str = (v: unknown, d = '') => (typeof v === 'string' ? v : d)
+  const arr = (v: unknown) => (Array.isArray(v) ? v : [])
+  const c = r.controller as Record<string, unknown> | undefined
+  const controller = c && typeof c === 'object'
+    ? {
+        name: str(c.name, 'Microcontroller'),
+        mcu: str(c.mcu) || undefined,
+        pins: arr(c.pins).filter((x): x is string => typeof x === 'string').slice(0, 80),
+      }
+    : null
+  const components = arr(r.components).slice(0, 28).map((x, i) => {
+    const o = x as Record<string, unknown>
+    return {
+      id: str(o.id) || `c${i + 1}`,
+      name: str(o.name, 'Component'),
+      category: str(o.category, 'OTHER'),
+      iface: str(o.iface ?? o.interface, 'none'),
+      qty: typeof o.qty === 'number' && isFinite(o.qty) ? Math.max(1, Math.round(o.qty)) : 1,
+      note: str(o.note) || undefined,
+    }
+  })
+  const connections = arr(r.connections)
+    .slice(0, 80)
+    .map((x) => {
+      const o = x as Record<string, unknown>
+      return { from: str(o.from), pin: str(o.pin), signal: str(o.signal) || undefined }
+    })
+    .filter((x) => x.from && x.pin)
+  const steps = arr(r.steps).filter((x): x is string => typeof x === 'string').slice(0, 14)
+  const summary = str(r.summary)
+  if (!components.length && !summary) return null
+  return { summary, controller, components, connections, steps }
+}
+
 export interface NlResult {
   spec: RequirementsSpec
   scene: SceneSpec | null
+  durationMs: number | null
+}
+
+export interface PlanResult {
+  plan: DesignPlan | null
   durationMs: number | null
 }
 
@@ -53,5 +95,22 @@ export async function designFromCli(prompt: string, mode: 'fast' | 'quality' = '
     ok: boolean; spec?: Record<string, unknown>; scene?: unknown; error?: string; durationMs?: number | null
   }
   if (!data.ok || !data.spec) throw new Error(data.error || 'cli failed')
-  return { spec: normalize(data.spec, prompt), scene: normalizeScene(data.scene), durationMs: data.durationMs ?? null }
+  return {
+    spec: normalize(data.spec, prompt),
+    scene: normalizeScene(data.scene),
+    durationMs: data.durationMs ?? null,
+  }
+}
+
+/** LLM engineering design (controller + components + wiring + steps) via /api/design. */
+export async function designPlanFromCli(prompt: string, mode: 'fast' | 'quality' = 'quality'): Promise<PlanResult> {
+  const res = await fetch('/api/design', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ prompt, mode }),
+  })
+  if (!res.ok) throw new Error(`endpoint ${res.status}`)
+  const data = (await res.json()) as { ok: boolean; design?: unknown; error?: string; durationMs?: number | null }
+  if (!data.ok) throw new Error(data.error || 'cli failed')
+  return { plan: normalizePlan(data.design), durationMs: data.durationMs ?? null }
 }

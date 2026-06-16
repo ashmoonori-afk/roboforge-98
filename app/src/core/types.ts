@@ -88,3 +88,31 @@ export interface DesignResult {
   archetype: Archetype
   sizing: SizingResult
 }
+
+// LLM-authored build design (the "design assistant" output): a complete,
+// possibly complex configuration — controller + components + wiring + steps.
+export interface DesignComponent {
+  id: string
+  name: string
+  category: string
+  iface: string      // PWM | I2C | SPI | UART | ANALOG | DIGITAL | POWER | GND | none
+  qty: number
+  note?: string
+}
+export interface DesignConnection {
+  from: string       // component id
+  pin: string        // controller pin label
+  signal?: string
+}
+export interface DesignController {
+  name: string
+  mcu?: string
+  pins: string[]
+}
+export interface DesignPlan {
+  summary: string
+  controller: DesignController | null
+  components: DesignComponent[]
+  connections: DesignConnection[]
+  steps: string[]
+}

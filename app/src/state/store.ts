@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Part, DesignResult, SpecValue } from '../core/types'
+import type { Part, DesignResult, SpecValue, DesignPlan } from '../core/types'
 import type { Assignment } from '../core/mcu'
 import type { SceneSpec } from '../core/scene'
 
@@ -43,6 +43,7 @@ interface AppState {
   logs: LogEntry[]
   camCmd: CamCmd | null
   scene: SceneSpec | null
+  plan: DesignPlan | null
 
   setDesign: (d: DesignResult) => void
   placePart: (part: Part) => void
@@ -55,6 +56,7 @@ interface AppState {
   pushLog: (kind: LogKind, text: string) => void
   cam: (kind: CamKind) => void
   setScene: (scene: SceneSpec | null) => void
+  setPlan: (plan: DesignPlan | null) => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -68,6 +70,7 @@ export const useStore = create<AppState>((set) => ({
   logs: [],
   camCmd: null,
   scene: null,
+  plan: null,
 
   setDesign: (design) => set({ design }),
   placePart: (part) =>
@@ -92,4 +95,5 @@ export const useStore = create<AppState>((set) => ({
   pushLog: (kind, text) => set((s) => ({ logs: append(s.logs, kind, text) })),
   cam: (kind) => set((s) => ({ camCmd: { kind, seq: (s.camCmd?.seq ?? 0) + 1 } })),
   setScene: (scene) => set({ scene }),
+  setPlan: (plan) => set({ plan }),
 }))
