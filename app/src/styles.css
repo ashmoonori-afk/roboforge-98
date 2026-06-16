@@ -236,3 +236,7 @@ body { background: var(--teal); }
 .rf-ai-comp { max-height: 116px; overflow-y: auto; }
 .rf-ai-steps { margin: 0; padding-left: 18px; }
 .rf-ai-steps li { margin-bottom: 2px; }
+
+/* ---- AI BOM rows (design parts → buy links) ---- */
+.rf-bom { white-space: normal; padding: 2px 0; }
+a.rf-src { text-decoration: none; cursor: pointer; margin-left: 2px; }

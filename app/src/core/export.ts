@@ -1,4 +1,4 @@
-import type { DesignResult } from './types'
+import type { DesignResult, DesignPlan } from './types'
 import type { SceneSpec } from './scene'
 import { parts } from '../data/parts'
 import { boards } from '../data/boards'
@@ -40,8 +40,26 @@ export function bomRows(design: DesignResult): BomRow[] {
   return rows
 }
 
-export function toBomCsv(design: DesignResult): string {
+/** Source-diverse buy/search links for any component name (Amazon / Octopart / Mouser). */
+export function buyLinks(name: string) {
+  const q = encodeURIComponent(name)
+  return [
+    { src: 'A', url: `https://www.amazon.com/s?k=${q}&tag=roboforge-20` },
+    { src: 'N', url: `https://octopart.com/search?q=${q}` },
+    { src: 'M', url: `https://www.mouser.com/c/?q=${q}` },
+  ] as const
+}
+
+export function toBomCsv(design: DesignResult, plan?: DesignPlan | null): string {
   const esc = (s: unknown) => `"${String(s).replace(/"/g, '""')}"`
+  if (plan && plan.components.length) {
+    const head = 'name,qty,interface,note,amazon,octopart,mouser'
+    const lines = plan.components.map((c) => {
+      const l = buyLinks(c.name)
+      return [c.name, c.qty, c.iface, c.note ?? '', l[0].url, l[1].url, l[2].url].map(esc).join(',')
+    })
+    return [head, ...lines].join('\n')
+  }
   const head = 'slot,name,source,sku,price_usd,url'
   const lines = bomRows(design).map((r) =>
     [r.slot, r.name, r.source, r.sku, r.priceUsd ?? '', r.url].map(esc).join(','),
@@ -50,9 +68,18 @@ export function toBomCsv(design: DesignResult): string {
 }
 
 /** Portable project file: requirements spec + sizing + the generated 3D scene. */
-export function toDesignJson(design: DesignResult, scene: SceneSpec | null): string {
+export function toDesignJson(design: DesignResult, scene: SceneSpec | null, plan?: DesignPlan | null): string {
   return JSON.stringify(
-    { spec: design.spec, archetype: design.archetype.id, sizing: design.sizing, bom: bomRows(design), scene },
+    {
+      spec: design.spec,
+      archetype: design.archetype.id,
+      sizing: design.sizing,
+      bom: plan && plan.components.length
+        ? plan.components.map((c) => ({ ...c, links: buyLinks(c.name) }))
+        : bomRows(design),
+      design: plan ?? null,
+      scene,
+    },
     null,
     2,
   )

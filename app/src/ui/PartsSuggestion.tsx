@@ -2,10 +2,31 @@ import { parts } from '../data/parts'
 import { boards } from '../data/boards'
 import type { PartCategory, SpecValue } from '../core/types'
 import { useStore } from '../state/store'
+import { buyLinks } from '../core/export'
 
 export function PartsSuggestion() {
   const design = useStore((s) => s.design)
   const setHover = useStore((s) => s.setHover)
+  const plan = useStore((s) => s.plan)
+
+  if (plan && plan.components.length > 0) {
+    return (
+      <div>
+        <p style={{ marginTop: 0 }} className="rf-dim">
+          AI-designed BOM ({plan.components.length} parts) — buy on <b>Amazon</b> · <b>Octopart</b> · <b>Mouser</b>.
+        </p>
+        {plan.components.map((c) => (
+          <div key={c.id} className="rf-sug rf-bom">
+            <span className="rf-tag">{(c.iface || '—').slice(0, 4)}</span> {c.name}{c.qty > 1 ? ` ×${c.qty}` : ''}{' '}
+            {buyLinks(c.name).map((l) => (
+              <a key={l.src} className={`rf-src rf-src-${l.src}`} href={l.url} target="_blank" rel="noreferrer" title={`search ${l.src}`}>{l.src}</a>
+            ))}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   const slots: PartCategory[] = design?.archetype.partSlots ?? ['MOTOR', 'BATTERY', 'SENSOR']
 
   return (

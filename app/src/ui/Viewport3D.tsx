@@ -140,6 +140,7 @@ export function Viewport3D() {
   const pushLog = useStore((s) => s.pushLog)
   const cam = useStore((s) => s.cam)
   const scene = useStore((s) => s.scene)
+  const plan = useStore((s) => s.plan)
   const isArm = design?.archetype.id === 'n_dof_arm'
   const isMultiArm = design?.archetype.id === 'multi_arm_station'
   const isAutomaton = design?.archetype.id === 'humanoid_automaton'
@@ -235,8 +236,8 @@ export function Viewport3D() {
         <span className="rf-dim">Export / handoff:</span>
         <button disabled={!design} onClick={() => { if (exportGLB(scene?.name ?? design?.archetype.name ?? 'robot')) pushLog('info', 'exported .glb (3D mesh)') }}>.glb</button>
         <button disabled={!design} onClick={() => { if (exportSTL(scene?.name ?? design?.archetype.name ?? 'robot')) pushLog('info', 'exported .stl (3D print)') }}>.stl</button>
-        <button disabled={!design} onClick={() => { if (design) { download('bom.csv', toBomCsv(design), 'text/csv'); pushLog('info', 'exported BOM.csv') } }}>BOM.csv</button>
-        <button disabled={!design} onClick={() => { if (design) { download('design.json', toDesignJson(design, scene), 'application/json'); pushLog('info', 'exported design.json') } }}>design.json</button>
+        <button disabled={!design} onClick={() => { if (design) { download('bom.csv', toBomCsv(design, plan), 'text/csv'); pushLog('info', 'exported BOM.csv') } }}>BOM.csv</button>
+        <button disabled={!design} onClick={() => { if (design) { download('design.json', toDesignJson(design, scene, plan), 'application/json'); pushLog('info', 'exported design.json') } }}>design.json</button>
       </div>
     </div>
   )

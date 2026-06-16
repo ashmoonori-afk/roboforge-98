@@ -20,7 +20,7 @@ const SPEC_INSTRUCTION = [
 const DESIGN_INSTRUCTION = [
   'You are a robotics design engineer. From the user\'s robot goal, output ONLY one minified JSON',
   'object (no prose, no fences): {"summary":string,"controller":{"name":string,"mcu":string,"pins":[string]},"components":[{"id":string,"name":string,"category":string,"iface":"PWM"|"I2C"|"SPI"|"UART"|"ANALOG"|"DIGITAL"|"POWER"|"GND"|"none","qty":integer,"note":string}],"connections":[{"from":componentId,"pin":controllerPin,"signal":string}],"steps":[string]}.',
-  'Pick a real microcontroller; include 6-12 components (sensors, motor drivers, actuators, power, regulators, comms); wire EACH electrical component to a specific controller pin in "connections" consistent with its iface; give 4-8 assembly steps. Output JSON only.',
+  'Pick a real microcontroller; include 8-16 DIVERSE components across categories — sensors, actuators/motors, motor drivers, power (battery + regulator), comms (radio/USB/Bluetooth), passives (resistors/capacitors), connectors, and mounting/mechanical hardware; wire EACH electrical component to a specific controller pin in "connections" consistent with its iface; give 4-8 assembly steps. Output JSON only.',
 ].join('\n')
 
 function runClaude(prompt: string, model: string): Promise<string> {
