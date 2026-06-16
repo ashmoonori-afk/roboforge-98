@@ -2,6 +2,7 @@ import type { DesignResult, DesignPlan } from './types'
 import type { SceneSpec } from './scene'
 import { parts } from '../data/parts'
 import { boards } from '../data/boards'
+import { archetypes } from '../data/archetypes'
 
 /** Trigger a browser download of text or a Blob. */
 export function download(filename: string, data: Blob | string, mime = 'text/plain'): void {
@@ -83,4 +84,14 @@ export function toDesignJson(design: DesignResult, scene: SceneSpec | null, plan
     null,
     2,
   )
+}
+
+export interface LoadedProject { design: DesignResult; scene: SceneSpec | null; plan: DesignPlan | null }
+
+/** Inverse of toDesignJson — validated at the boundary (untrusted file). */
+export function parseDesignJson(raw: string): LoadedProject {
+  const j = JSON.parse(raw)
+  if (!j || typeof j !== 'object' || !j.spec || !j.sizing) throw new Error('not a RoboForge design.json')
+  const archetype = archetypes.find((a) => a.id === j.archetype) ?? archetypes[0]
+  return { design: { spec: j.spec, archetype, sizing: j.sizing }, scene: j.scene ?? null, plan: j.design ?? null }
 }

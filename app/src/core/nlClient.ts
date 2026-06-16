@@ -65,8 +65,12 @@ function normalizePlan(raw: unknown): DesignPlan | null {
     .filter((x) => x.from && x.pin)
   const steps = arr(r.steps).filter((x): x is string => typeof x === 'string').slice(0, 14)
   const summary = str(r.summary)
+  const ids = new Set(components.map((c) => c.id))
+  const wired = connections.filter((w) => ids.has(w.from))
+  const dropped = connections.length - wired.length
+  const warnings = dropped ? [`${dropped} connection(s) referenced unknown components`] : []
   if (!components.length && !summary) return null
-  return { summary, controller, components, connections, steps }
+  return { summary, controller, components, connections: wired, steps, warnings }
 }
 
 export interface NlResult {
@@ -129,4 +133,18 @@ export async function designPlanFromCli(prompt: string, mode: 'fast' | 'quality'
   const result: PlanResult = { plan: normalizePlan(data.design), durationMs: data.durationMs ?? null }
   planCache.set(key, result)
   return result
+}
+
+/** Re-design / refine an EXISTING plan via /api/redesign. Not cached (plan mutates). */
+export async function redesignFromCli(
+  prompt: string, plan: DesignPlan, mode: 'fast' | 'quality' = 'quality',
+): Promise<PlanResult> {
+  const res = await fetch('/api/redesign', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ prompt, plan, mode }),
+  })
+  if (!res.ok) throw new Error(`endpoint ${res.status}`)
+  const data = (await res.json()) as { ok: boolean; design?: unknown; error?: string; durationMs?: number | null }
+  if (!data.ok) throw new Error(data.error || 'cli failed')
+  return { plan: normalizePlan(data.design), durationMs: data.durationMs ?? null }
 }

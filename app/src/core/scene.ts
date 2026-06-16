@@ -74,6 +74,15 @@ function node(raw: unknown, budget: { n: number }, depth: number): SceneNode | n
   return out
 }
 
+/** Lift/sink top-level nodes so the robot sits near y=0, but ONLY when the scene
+ *  is clearly wrong (sunk/floating beyond a generous ±0.25 band) — scenes the LLM
+ *  already grounded per its "lowest point near y=0" instruction are left untouched. */
+function liftRoots(nodes: SceneNode[]): SceneNode[] {
+  const minY = Math.min(...nodes.map((nd) => nd.pos[1]))
+  if (!isFinite(minY) || (minY > -0.25 && minY < 0.25)) return nodes
+  return nodes.map((nd) => ({ ...nd, pos: [nd.pos[0], nd.pos[1] - minY, nd.pos[2]] as [number, number, number] }))
+}
+
 export function normalizeScene(raw: unknown): SceneSpec | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
@@ -81,5 +90,5 @@ export function normalizeScene(raw: unknown): SceneSpec | null {
   const budget = { n: NODE_BUDGET }
   const nodes = r.nodes.map((c) => node(c, budget, 0)).filter(Boolean) as SceneNode[]
   if (!nodes.length) return null
-  return { name: typeof r.name === 'string' && r.name ? r.name : 'Generated robot', nodes }
+  return { name: typeof r.name === 'string' && r.name ? r.name : 'Generated robot', nodes: liftRoots(nodes) }
 }

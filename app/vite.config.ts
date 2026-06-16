@@ -29,6 +29,8 @@ const DESIGN_INSTRUCTION = [
   'Give 5-10 assembly + wiring steps. Output JSON only.',
 ].join('\n')
 
+const CLI_TIMEOUT_MS = 280_000
+
 function runClaude(prompt: string, model: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn('claude', ['-p', '--model', model, '--strict-mcp-config', '--setting-sources', 'project', '--output-format', 'json'], {
@@ -37,13 +39,14 @@ function runClaude(prompt: string, model: string): Promise<string> {
     })
     let out = ''
     let err = ''
-    const timer = setTimeout(() => { child.kill(); reject(new Error('claude CLI timeout')) }, 280000)
+    const timer = setTimeout(() => { child.kill(); reject(new Error('claude CLI timeout')) }, CLI_TIMEOUT_MS)
     child.stdout.on('data', (d) => (out += d))
     child.stderr.on('data', (d) => (err += d))
     child.on('error', (e) => { clearTimeout(timer); reject(e) })
     child.on('close', (code) => {
       clearTimeout(timer)
-      if (!out) reject(new Error(`claude exit ${code}: ${err.slice(0, 200)}`))
+      if (code !== 0) reject(new Error(`claude exit ${code}: ${err.slice(0, 200) || '(no stderr)'}`))
+      else if (!out) reject(new Error('claude produced no output'))
       else resolve(out)
     })
     child.stdin.write(prompt)
@@ -52,10 +55,33 @@ function runClaude(prompt: string, model: string): Promise<string> {
 }
 
 function extractJson(text: string): unknown {
-  const a = text.indexOf('{')
-  const b = text.lastIndexOf('}')
-  if (a < 0 || b < 0) throw new Error('no JSON object in CLI output')
-  return JSON.parse(text.slice(a, b + 1))
+  const t = text.replace(/```(?:json)?/gi, '').trim()
+  const start = t.indexOf('{')
+  if (start < 0) throw new Error('no JSON object in CLI output')
+  let depth = 0, inStr = false, esc = false, end = -1
+  for (let i = start; i < t.length; i++) {
+    const ch = t[i]
+    if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue }
+    if (ch === '"') inStr = true
+    else if (ch === '{') depth++
+    else if (ch === '}' && --depth === 0) { end = i; break }
+  }
+  const slice = (end >= 0 ? t.slice(start, end + 1) : t.slice(start)).replace(/,\s*([}\]])/g, '$1')
+  return JSON.parse(slice)
+}
+
+/** Run the CLI once, parse + extract; retry once on transient/parse failure. */
+async function runWithRetry(fullPrompt: string, model: string) {
+  let lastErr: unknown
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const raw = await runClaude(fullPrompt, model)
+      const wrap = JSON.parse(raw) as { result?: string; duration_ms?: number }
+      const parsed = extractJson(typeof wrap.result === 'string' ? wrap.result : raw)
+      return { parsed, ms: wrap.duration_ms ?? null, attempt }
+    } catch (e) { lastErr = e }
+  }
+  throw lastErr
 }
 
 /** A POST handler that runs the CLI with `instruction` and replies { ok, ...map(parsed) }. */
@@ -70,10 +96,42 @@ function cliRoute(instruction: string, map: (parsed: any, ms: number | null) => 
         const { prompt, mode } = JSON.parse(body || '{}')
         if (!prompt || typeof prompt !== 'string') throw new Error('missing prompt')
         const model = mode === 'fast' ? 'haiku' : 'opus'
-        const raw = await runClaude(`${instruction}\n\nUSER GOAL: ${prompt}`, model)
-        const wrap = JSON.parse(raw) as { result?: string; duration_ms?: number }
-        const parsed = extractJson(typeof wrap.result === 'string' ? wrap.result : raw)
-        res.end(JSON.stringify({ ok: true, ...map(parsed, wrap.duration_ms ?? null) }))
+        const { parsed, ms, attempt } = await runWithRetry(`${instruction}\n\nUSER GOAL: ${prompt}`, model)
+        res.end(JSON.stringify({ ok: true, attempt, ...map(parsed, ms) }))
+      } catch (e) {
+        res.end(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }))
+      }
+    })
+  }
+}
+
+const REDESIGN_INSTRUCTION = [
+  'You are a senior robotics/electronics design engineer REVISING an existing robot build design.',
+  'You are given the ORIGINAL GOAL and the CURRENT DESIGN as JSON. Improve, validate and refine it:',
+  'fix wiring errors, add missing support parts (regulators, decoupling/bulk caps, pull-ups, fuses, connectors, level shifters),',
+  'remove redundant parts, correct interfaces/pins, and make every connection reference a real component id with a coherent net.',
+  'Output ONLY one minified JSON object (no prose, no fences) in EXACTLY the same schema as the input design:',
+  '{"summary":string,"controller":{"name":string,"mcu":string,"pins":[string]},"components":[{"id":string,"label":string,"name":string,"category":string,"iface":"PWM"|"I2C"|"SPI"|"UART"|"ANALOG"|"DIGITAL"|"POWER"|"GND"|"none","specs":string,"qty":integer,"note":string}],"connections":[{"from":componentId,"pin":controllerPin,"net":string,"signal":string}],"steps":[string]}.',
+  'Keep stable component ids where the part is unchanged. Label every component with a reference designator (U#, M#, R#, C#, D#, J#, SW#, LED#, REG#).',
+  'Give EVERY connection a "net" name so connections form coherent nets (power rails, grounds, buses, signal nets). Provide 5-10 assembly + wiring steps. Output JSON only.',
+].join('\n')
+
+/** Like cliRoute, but also forwards the CURRENT PLAN json to the CLI (redesign). */
+function planCliRoute(instruction: string, map: (parsed: any, ms: number | null) => Record<string, unknown>) {
+  return (req: any, res: any) => {
+    if (req.method !== 'POST') { res.statusCode = 405; res.end(); return }
+    let body = ''
+    req.on('data', (c: Buffer) => (body += c))
+    req.on('end', async () => {
+      res.setHeader('content-type', 'application/json')
+      try {
+        const { prompt, plan, mode } = JSON.parse(body || '{}')
+        if (!prompt || typeof prompt !== 'string') throw new Error('missing prompt')
+        if (!plan || typeof plan !== 'object') throw new Error('missing plan')
+        const model = mode === 'fast' ? 'haiku' : 'opus'
+        const full = `${instruction}\n\nORIGINAL GOAL: ${prompt}\n\nCURRENT DESIGN (JSON):\n${JSON.stringify(plan)}`
+        const { parsed, ms, attempt } = await runWithRetry(full, model)
+        res.end(JSON.stringify({ ok: true, attempt, ...map(parsed, ms) }))
       } catch (e) {
         res.end(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }))
       }
@@ -93,6 +151,9 @@ function nlCliPlugin() {
       server.middlewares.use('/api/design', cliRoute(DESIGN_INSTRUCTION, (p, ms) => ({
         design: p,
         durationMs: ms,
+      })))
+      server.middlewares.use('/api/redesign', planCliRoute(REDESIGN_INSTRUCTION, (p, ms) => ({
+        design: p, durationMs: ms,
       })))
     },
   }

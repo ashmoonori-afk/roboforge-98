@@ -119,4 +119,5 @@ export interface DesignPlan {
   components: DesignComponent[]
   connections: DesignConnection[]
   steps: string[]
+  warnings?: string[]
 }

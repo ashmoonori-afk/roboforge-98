@@ -1,4 +1,4 @@
-import type { DragEvent as RDragEvent, ReactNode } from 'react'
+import type { DragEvent as RDragEvent, ReactNode, ChangeEvent } from 'react'
 import { useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, ContactShadows, Environment, SoftShadows, Html } from '@react-three/drei'
@@ -7,7 +7,7 @@ import { CameraController } from './CameraController'
 import { SceneRenderer } from './SceneRenderer'
 import { robotHolder } from './robotRef'
 import { exportGLB, exportSTL } from './exporters3d'
-import { toBomCsv, toDesignJson, download } from '../core/export'
+import { toBomCsv, toDesignJson, download, parseDesignJson } from '../core/export'
 import { EffectComposer, N8AO, Bloom, ToneMapping, SMAA, Vignette } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import { suspend } from 'suspend-react'
@@ -45,6 +45,12 @@ export function Viewport3D() {
   const scene = useStore((s) => s.scene)
   const plan = useStore((s) => s.plan)
   const generating = useStore((s) => s.generating)
+  const cliError = useStore((s) => s.cliError)
+  const setDesign = useStore((s) => s.setDesign)
+  const setScene = useStore((s) => s.setScene)
+  const setPlan = useStore((s) => s.setPlan)
+  const setStatus = useStore((s) => s.setStatus)
+  const fileRef = useRef<HTMLInputElement>(null)
   const lt = design?.spec.locomotionType
   const roll = lt === 'wheeled_differential' || lt === 'wheeled_omni' || lt === 'tracked'
 
@@ -53,6 +59,16 @@ export function Viewport3D() {
     const id = e.dataTransfer.getData('text/plain')
     const part = id ? partById(id) : undefined
     if (part) placePart(part)
+  }
+
+  const onLoad = (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return
+    f.text().then((t) => {
+      const { design: d, scene: sc, plan: pl } = parseDesignJson(t)
+      setDesign(d); setScene(sc); setPlan(pl)
+      pushLog('info', `loaded project: ${d.archetype.name}`); setStatus('Project loaded from design.json.')
+    }).catch((err) => { pushLog('warn', `load failed: ${err.message}`); setStatus('Load failed — not a valid design.json.') })
+    e.target.value = ''
   }
 
   return (
@@ -87,6 +103,8 @@ export function Viewport3D() {
                 <Html center className="rf-empty3d">
                   {generating ? (
                     <div><b>Generating 3D…</b><br />the LLM is modeling your robot (~30–60s)</div>
+                  ) : cliError ? (
+                    <div>3D unavailable: {cliError}<br />3D generation needs the local CLI — run <code>npm run dev</code>.</div>
                   ) : design ? (
                     <div>No 3D scene returned.<br />3D generation needs the local CLI — run <code>npm run dev</code>, not a static preview.</div>
                   ) : (
@@ -139,6 +157,8 @@ export function Viewport3D() {
         <button disabled={!design} onClick={() => { if (exportSTL(scene?.name ?? design?.archetype.name ?? 'robot')) pushLog('info', 'exported .stl (3D print)') }}>.stl</button>
         <button disabled={!design} onClick={() => { if (design) { download('bom.csv', toBomCsv(design, plan), 'text/csv'); pushLog('info', 'exported BOM.csv') } }}>BOM.csv</button>
         <button disabled={!design} onClick={() => { if (design) { download('design.json', toDesignJson(design, scene, plan), 'application/json'); pushLog('info', 'exported design.json') } }}>design.json</button>
+        <button onClick={() => fileRef.current?.click()}>Load .json</button>
+        <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={onLoad} />
       </div>
     </div>
   )

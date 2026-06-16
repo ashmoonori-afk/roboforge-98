@@ -17,9 +17,9 @@ export function Panel({ title, children, span = 1, tall = false }: PanelProps) {
       <div className="title-bar">
         <div className="title-bar-text">{title}</div>
         <div className="title-bar-controls">
-          <button aria-label="Minimize" />
-          <button aria-label="Maximize" />
-          <button aria-label="Close" />
+          <button aria-label="Minimize" tabIndex={-1} aria-hidden="true" />
+          <button aria-label="Maximize" tabIndex={-1} aria-hidden="true" />
+          <button aria-label="Close" tabIndex={-1} aria-hidden="true" />
         </div>
       </div>
       <div className={`window-body rf-panel-body${tall ? ' rf-panel-tall' : ''}`}>{children}</div>

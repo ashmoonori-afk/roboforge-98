@@ -46,6 +46,7 @@ interface AppState {
   scene: SceneSpec | null
   plan: DesignPlan | null
   planBase: DesignPlan | null   // snapshot of the last AI design, for "reset tweaks"
+  cliError: string | null
 
   setDesign: (d: DesignResult) => void
   placePart: (part: Part) => void
@@ -64,6 +65,7 @@ interface AppState {
   editPlan: (fn: (p: DesignPlan) => DesignPlan) => void
   /** Revert tweaks back to the last AI-generated design. */
   resetPlan: () => void
+  setCliError: (e: string | null) => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -80,6 +82,7 @@ export const useStore = create<AppState>((set) => ({
   scene: null,
   plan: null,
   planBase: null,
+  cliError: null,
 
   setDesign: (design) => set({ design }),
   placePart: (part) =>
@@ -109,4 +112,5 @@ export const useStore = create<AppState>((set) => ({
   setPlan: (plan) => set({ plan, planBase: plan ? structuredClone(plan) : null }),
   editPlan: (fn) => set((s) => (s.plan ? { plan: fn(s.plan) } : s)),
   resetPlan: () => set((s) => ({ plan: s.planBase })),
+  setCliError: (cliError) => set({ cliError }),
 }))

@@ -1,4 +1,5 @@
 import { useStore } from '../state/store'
+import { redesignFromCli } from '../core/nlClient'
 import type { DesignComponent, DesignConnection } from '../core/types'
 
 const IFACES = ['PWM', 'I2C', 'SPI', 'UART', 'ANALOG', 'DIGITAL', 'POWER', 'GND', 'none']
@@ -13,6 +14,9 @@ export function DesignTuner() {
   const editPlan = useStore((s) => s.editPlan)
   const resetPlan = useStore((s) => s.resetPlan)
   const pushLog = useStore((s) => s.pushLog)
+  const setPlan = useStore((s) => s.setPlan)
+  const setGenerating = useStore((s) => s.setGenerating)
+  const generating = useStore((s) => s.generating)
 
   if (!plan) {
     return (
@@ -55,6 +59,24 @@ export function DesignTuner() {
   const setPins = (v: string) =>
     editPlan((p) => ({ ...p, controller: p.controller ? { ...p.controller, pins: v.split(',').map((s) => s.trim()).filter(Boolean) } : p.controller }))
 
+  const refineWithAi = async () => {
+    if (generating) return
+    setGenerating(true)
+    pushLog('gen', 'refining design with AI…')
+    try {
+      const goal = plan.summary?.trim() || 'Refine and validate this robot design.'
+      const { plan: refined, durationMs } = await redesignFromCli(goal, plan, 'quality')
+      if (!refined) throw new Error('empty plan')
+      setPlan(refined)
+      pushLog('gen', `AI refined design (${refined.components.length} parts, ${refined.connections.length} wires${durationMs ? `, ${Math.round(durationMs / 1000)}s` : ''})`)
+      refined.warnings?.forEach((w) => pushLog('note', w))
+    } catch (e) {
+      pushLog('warn', `refine failed: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const compOptions = (current: string) => {
     const ids = plan.components.map((c) => c.id)
     const opts = plan.components.map((c) => ({ id: c.id, label: `${c.label} ${c.name}`.slice(0, 22) }))
@@ -67,6 +89,9 @@ export function DesignTuner() {
       <div className="rf-tuner-bar">
         <span className="rf-dim">{plan.components.length} parts · {plan.connections.length} wires</span>
         <button onClick={() => { resetPlan(); pushLog('info', 'design tweaks reset to AI design') }} title="Discard tweaks">↺ Reset to AI</button>
+        <button onClick={refineWithAi} disabled={generating} title="Send the tuned plan back to the AI for a validated refinement">
+          {generating ? '⏳ Refining…' : '✨ Refine with AI'}
+        </button>
       </div>
 
       {plan.controller && (

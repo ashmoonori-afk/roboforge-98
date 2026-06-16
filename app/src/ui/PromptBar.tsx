@@ -27,10 +27,12 @@ export function PromptBar() {
   const pushLog = useStore((s) => s.pushLog)
   const setScene = useStore((s) => s.setScene)
   const setPlan = useStore((s) => s.setPlan)
+  const setCliError = useStore((s) => s.setCliError)
 
   const generate = async () => {
     setBusy(true)
     setGenerating(true)
+    setCliError(null)
     setStatus('Generating… (summoning local CLI)')
     setScene(null)
     setPlan(null)
@@ -42,6 +44,8 @@ export function PromptBar() {
     // asynchronously when the CLI returns the richer spec + generated 3D scene.
     setDesign({ spec, archetype: matchArchetype(spec), sizing: sizeDesign(spec) })
     pushLog('gen', 'instant draft (rule-based archetype) — refining via local CLI…')
+    pushLog('gen', `stage 1/2: modeling 3D scene (${mode === 'fast' ? 'haiku' : 'opus'})…`)
+    pushLog('gen', 'stage 2/2: engineering design…')
     // Engineering design runs in parallel with the spec+scene call (separate, reliable endpoints).
     const planP = designPlanFromCli(text, mode).then((d) => d.plan).catch(() => null)
     try {
@@ -49,11 +53,18 @@ export function PromptBar() {
       spec = r.spec
       if (r.scene) {
         setScene(r.scene)
+        setStatus('3D model ready — engineering design still running…')
         pushLog('gen', `auto-modeled 3D: ${r.scene.nodes.length} parts ("${r.scene.name}")`)
       }
       pushLog('gen', `extracted via local claude CLI${r.durationMs ? ` (${Math.round(r.durationMs)}ms)` : ''}`)
     } catch (e) {
-      pushLog('warn', `local CLI unavailable (${e instanceof Error ? e.message : e}) — used rule-based fallback`)
+      const msg = e instanceof Error ? e.message : String(e)
+      const cause = /endpoint|fetch/i.test(msg) ? 'CLI endpoint offline (static build?)'
+        : /timeout/i.test(msg) ? 'CLI timed out'
+        : /JSON|parse/i.test(msg) ? 'CLI returned malformed JSON' : msg
+      pushLog('warn', `3D model stage failed: ${cause} — kept rule-based draft`)
+      setStatus(`Partial: rule-based draft only (${cause}).`)
+      setCliError(cause)
     }
 
     pushLog('gen', `spec → locomotion=${spec.locomotionType}, payload=${spec.payloadKg ?? '—'}kg, manip=${spec.manipulation}`)
@@ -71,8 +82,9 @@ export function PromptBar() {
     if (plan) {
       setPlan(plan)
       pushLog('gen', `AI design: ${plan.components.length} components, ${plan.connections.length} connections, ${plan.steps.length} steps`)
+      plan.warnings?.forEach((w) => pushLog('note', w))
     } else {
-      pushLog('warn', 'AI design unavailable (CLI)')
+      pushLog('warn', 'engineering design stage failed — no AI design (CLI offline or malformed JSON)')
     }
     setBusy(false)
     setGenerating(false)
@@ -84,11 +96,12 @@ export function PromptBar() {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !busy) { e.preventDefault(); generate() } }}
         rows={3}
         style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box' }}
       />
       <div className="rf-prompt-controls">
-        <button onClick={generate} disabled={busy}>
+        <button onClick={generate} disabled={busy} title="Ctrl/⌘+Enter">
           {busy ? '… generating' : '▶ Generate design'}
         </button>
         <select value={mode} onChange={(e) => setMode(e.target.value as 'fast' | 'quality')} title="fast = quick + cheap; quality = detailed">
@@ -99,8 +112,11 @@ export function PromptBar() {
           title="Copy a shareable link with this prompt"
           onClick={() => {
             const url = `${window.location.origin}${window.location.pathname}?p=${encodeURIComponent(text)}`
-            if (navigator.clipboard) navigator.clipboard.writeText(url)
-            setStatus('Shareable link copied to clipboard.')
+            if (navigator.clipboard?.writeText) {
+              navigator.clipboard.writeText(url).then(
+                () => setStatus('Shareable link copied to clipboard.'),
+                () => setStatus('Copy failed — clipboard unavailable.'))
+            } else setStatus('Copy unavailable in this context (needs HTTPS/localhost).')
           }}
         >
           Share

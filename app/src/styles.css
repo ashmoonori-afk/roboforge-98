@@ -7,6 +7,8 @@
 
 * { box-sizing: border-box; }
 
+:focus-visible { outline: 1px dotted #000; outline-offset: 1px; }
+
 html, body, #root {
   margin: 0;
   height: 100%;
