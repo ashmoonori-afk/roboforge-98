@@ -47,6 +47,7 @@ interface AppState {
   plan: DesignPlan | null
   planBase: DesignPlan | null   // snapshot of the last AI design, for "reset tweaks"
   cliError: string | null
+  conceptSvg: string | null     // Codex-drawn assembled-robot concept (SVG markup)
 
   setDesign: (d: DesignResult) => void
   placePart: (part: Part) => void
@@ -66,6 +67,7 @@ interface AppState {
   /** Revert tweaks back to the last AI-generated design. */
   resetPlan: () => void
   setCliError: (e: string | null) => void
+  setConceptSvg: (svg: string | null) => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -83,6 +85,7 @@ export const useStore = create<AppState>((set) => ({
   plan: null,
   planBase: null,
   cliError: null,
+  conceptSvg: null,
 
   setDesign: (design) => set({ design }),
   placePart: (part) =>
@@ -113,4 +116,5 @@ export const useStore = create<AppState>((set) => ({
   editPlan: (fn) => set((s) => (s.plan ? { plan: fn(s.plan) } : s)),
   resetPlan: () => set((s) => ({ plan: s.planBase })),
   setCliError: (cliError) => set({ cliError }),
+  setConceptSvg: (conceptSvg) => set({ conceptSvg }),
 }))

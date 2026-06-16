@@ -9,20 +9,22 @@ import { spawn } from 'node:child_process'
 const SPEC_INSTRUCTION = [
   'You are a robot design + 3D modeling assistant. From the user\'s goal, output ONLY one',
   'minified JSON object (no prose, no markdown fences) with two keys: "spec" and "scene".',
-  '"spec" = {"taskSummary":string,"locomotionType":"wheeled_differential"|"wheeled_omni"|"tracked"|"legged_quadruped"|"arm_manipulator"|"stationary"|"humanoid"|"unknown","wheelCount":integer|null,"armCount":integer|null,"payloadKg":number|null,"manipulation":boolean,"environmentIndoor":boolean,"ambiguities":string[]}.',
-  'Use "stationary" for fixed-base/surgical/multi-arm (set armCount); "humanoid" for automaton/android/bipedal figures.',
+  '"spec" = {"taskSummary":string,"locomotionType":"wheeled_differential"|"wheeled_omni"|"tracked"|"legged_quadruped"|"arm_manipulator"|"stationary"|"humanoid"|"aerial_multirotor"|"unknown","wheelCount":integer|null,"armCount":integer|null,"payloadKg":number|null,"manipulation":boolean,"environmentIndoor":boolean,"ambiguities":string[]}.',
+  'Use "stationary" for fixed-base/surgical/multi-arm (set armCount); "humanoid" for automaton/android/bipedal figures; "aerial_multirotor" for drones/quadcopters/hexacopters/UAVs.',
   '"scene" = {"name":string,"nodes":[Node,...]} — a 3D model of the robot from primitives that the app renders directly.',
   'Node = {"shape":"box"|"cylinder"|"sphere"|"cone"|"torus"|"gear"|"group","size":[numbers],"pos":[x,y,z],"rot":[x,y,z],"color":"#hex","metalness":0..1,"roughness":0..1,"axis":[x,y,z]?,"spinRate":number?,"swing":{"axis":"x"|"y"|"z","amp":number,"freq":number}?,"children":[Node]?}.',
   'size by shape: box[w,h,d], cylinder[radiusTop,radiusBottom,height], sphere[r], cone[r,h], torus[r,tube], gear[r,teeth,thickness], group=none.',
   'DYNAMIC PARTS (wheels, gears, rotors, drums): the part is its OWN node and its geometry is CENTERED on the node origin (pos) so that origin is the rotation centre. Give "axis" = the unit vector the hub points along in the SCENE frame (Y is up, robot forward is -Z) i.e. the visible spin axis, and "spinRate" = signed rad/s (sign sets direction).',
   'The robot drives FORWARD along -Z. Ground wheels mount with their hub axis HORIZONTAL and across the robot (world X), so axis is [1,0,0] (model the cylinder lying on its side, e.g. rot=[0,0,1.5708]); for forward roll set spinRate so the wheel top moves toward -Z (typical |spinRate| 6-10). Use "swing" for limbs/arms instead of axis/spinRate.',
-  'Compose a clearly RECOGNIZABLE model (~10-16 nodes); match colour/material (brass gears, white medical housing, black tires, dark joints). Units are meters; height ~1.5-2.5; lowest point near y=0. Output JSON only.',
+  'For DRONES (aerial_multirotor): model a central body with arms/booms ending in motors, and a PROPELLER on each motor as a thin flat box or cylinder. Each propeller is a dynamic part spinning about the VERTICAL axis [0,1,0] with high spinRate (|spinRate| 30-60), centered on its motor. The body floats ABOVE the ground (lowest point ~y=0.4-1.0), not touching y=0.',
+  'Compose a clearly RECOGNIZABLE model (~10-16 nodes); match colour/material (brass gears, white medical housing, black tires, dark joints, dark drone frame). Units are meters; height ~1.5-2.5 (drones can be lower/wider). Ground robots: lowest point near y=0. Output JSON only.',
 ].join('\n')
 
 const DESIGN_INSTRUCTION = [
   'You are a senior robotics/electronics design engineer. From the user\'s robot goal, output ONLY one minified JSON object (no prose, no fences):',
-  '{"summary":string,"controller":{"name":string,"mcu":string,"pins":[string]},"components":[{"id":string,"label":string,"name":string,"category":string,"iface":"PWM"|"I2C"|"SPI"|"UART"|"ANALOG"|"DIGITAL"|"POWER"|"GND"|"none","specs":string,"qty":integer,"note":string}],"connections":[{"from":componentId,"pin":controllerPin,"net":string,"signal":string}],"steps":[string]}.',
+  '{"summary":string,"controller":{"name":string,"mcu":string,"pins":[string]},"components":[{"id":string,"label":string,"name":string,"category":string,"iface":"PWM"|"I2C"|"SPI"|"UART"|"ANALOG"|"DIGITAL"|"POWER"|"GND"|"none","specs":string,"qty":integer,"note":string}],"connections":[{"from":componentId,"pin":controllerPin,"net":string,"signal":string}],"steps":[string],"feasibility":{"level":"Prototype-ready"|"Feasible"|"Ambitious"|"Speculative","score":0-100,"factors":[string]}}.',
   'Include AS MANY components as a real build needs — typically 20-40: every sensor, actuator, motor driver, power source, voltage regulator, level shifter, decoupling/bulk capacitor, pull-up/current-limit resistor, connector, fuse, switch, indicator LED and mounting/mechanical part. Do not omit support parts.',
+  'JUDGE FEASIBILITY honestly: "level" = how realistically buildable today by a skilled maker; "score" 0-100; "factors" = 2-5 short drivers (part availability, power budget, mechanical/software complexity, cost, safety/regulatory). Prototype-ready=off-the-shelf parts assemble now; Speculative=needs custom fabrication or unproven tech.',
   'LABEL every component with a reference designator in "label" (U#, M#, R#, C#, D#, J#, SW#, LED#, REG#).',
   'For "specs", state the KEY electrical specs you SELECTED to MATCH the requirement (voltage, current, interface/I2C-address, value, torque, etc.); judge each part against the goal and justify the choice in "note".',
   'Design the WIRING STRUCTURE: give EVERY connection a "net" name so connections form coherent nets — power rails (5V, 3V3, VIN), grounds (GND), buses (I2C_SDA, I2C_SCL, SPI_MOSI/MISO/SCK, UART_TX/RX) and signal nets (PWM_M1A, etc.). Wire each electrical component to the right controller pins/nets for its iface.',
@@ -52,6 +54,37 @@ function runClaude(prompt: string, model: string): Promise<string> {
     child.stdin.write(prompt)
     child.stdin.end()
   })
+}
+
+// Concept "상상도": summon the local Codex CLI to DRAW an assembled-robot concept
+// as an SVG illustration (Codex is a coding agent — it generates vector art, not raster).
+function runCodex(prompt: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('codex', ['exec', '--skip-git-repo-check', '--ephemeral', '-s', 'read-only', '--color', 'never'], {
+      shell: process.platform === 'win32',
+      windowsHide: true,
+    })
+    let out = ''
+    let err = ''
+    const timer = setTimeout(() => { child.kill(); reject(new Error('codex CLI timeout')) }, CLI_TIMEOUT_MS)
+    child.stdout.on('data', (d) => (out += d))
+    child.stderr.on('data', (d) => (err += d))
+    child.on('error', (e) => { clearTimeout(timer); reject(e) })
+    child.on('close', (code) => {
+      clearTimeout(timer)
+      if (code !== 0 && !out) reject(new Error(`codex exit ${code}: ${err.slice(0, 200) || '(no stderr)'}`))
+      else resolve(out)
+    })
+    child.stdin.write(prompt)
+    child.stdin.end()
+  })
+}
+
+/** Pull the last <svg>…</svg> block out of Codex's chatty stdout. */
+function extractSvg(text: string): string {
+  const matches = text.match(/<svg[\s\S]*?<\/svg>/gi)
+  if (!matches || !matches.length) throw new Error('codex returned no SVG')
+  return matches[matches.length - 1]
 }
 
 function extractJson(text: string): unknown {
@@ -111,7 +144,8 @@ const REDESIGN_INSTRUCTION = [
   'fix wiring errors, add missing support parts (regulators, decoupling/bulk caps, pull-ups, fuses, connectors, level shifters),',
   'remove redundant parts, correct interfaces/pins, and make every connection reference a real component id with a coherent net.',
   'Output ONLY one minified JSON object (no prose, no fences) in EXACTLY the same schema as the input design:',
-  '{"summary":string,"controller":{"name":string,"mcu":string,"pins":[string]},"components":[{"id":string,"label":string,"name":string,"category":string,"iface":"PWM"|"I2C"|"SPI"|"UART"|"ANALOG"|"DIGITAL"|"POWER"|"GND"|"none","specs":string,"qty":integer,"note":string}],"connections":[{"from":componentId,"pin":controllerPin,"net":string,"signal":string}],"steps":[string]}.',
+  '{"summary":string,"controller":{"name":string,"mcu":string,"pins":[string]},"components":[{"id":string,"label":string,"name":string,"category":string,"iface":"PWM"|"I2C"|"SPI"|"UART"|"ANALOG"|"DIGITAL"|"POWER"|"GND"|"none","specs":string,"qty":integer,"note":string}],"connections":[{"from":componentId,"pin":controllerPin,"net":string,"signal":string}],"steps":[string],"feasibility":{"level":"Prototype-ready"|"Feasible"|"Ambitious"|"Speculative","score":0-100,"factors":[string]}}.',
+  'Re-judge "feasibility" after your revisions (level + score 0-100 + 2-5 factors).',
   'Keep stable component ids where the part is unchanged. Label every component with a reference designator (U#, M#, R#, C#, D#, J#, SW#, LED#, REG#).',
   'Give EVERY connection a "net" name so connections form coherent nets (power rails, grounds, buses, signal nets). Provide 5-10 assembly + wiring steps. Output JSON only.',
 ].join('\n')
@@ -139,6 +173,33 @@ function planCliRoute(instruction: string, map: (parsed: any, ms: number | null)
   }
 }
 
+const CONCEPT_INSTRUCTION = [
+  'You are a concept artist + illustrator. DRAW an "as-assembled" concept illustration of the described robot as ONE clean SVG.',
+  'Output ONLY the SVG markup (no prose, no code fences): a single <svg width="520" height="360" viewBox="0 0 520 360">…</svg>.',
+  'Make it a clear, friendly engineering concept sketch: a 3/4 or side view of the FULLY ASSEMBLED robot showing its real proportions and major parts (chassis/frame, wheels or propellers or arms, controller box, battery, sensors). Use flat colours, soft shadows, thin outlines, a light background. Add 3-6 tiny text labels with leader lines pointing at the key parts. Keep it legible and self-contained (no external images/fonts).',
+].join('\n')
+
+function conceptRoute() {
+  return (req: any, res: any) => {
+    if (req.method !== 'POST') { res.statusCode = 405; res.end(); return }
+    let body = ''
+    req.on('data', (c: Buffer) => (body += c))
+    req.on('end', async () => {
+      res.setHeader('content-type', 'application/json')
+      const t0 = Date.now()
+      try {
+        const { prompt } = JSON.parse(body || '{}')
+        if (!prompt || typeof prompt !== 'string') throw new Error('missing prompt')
+        const raw = await runCodex(`${CONCEPT_INSTRUCTION}\n\nROBOT TO ILLUSTRATE:\n${prompt}`)
+        const svg = extractSvg(raw)
+        res.end(JSON.stringify({ ok: true, svg, durationMs: Date.now() - t0 }))
+      } catch (e) {
+        res.end(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }))
+      }
+    })
+  }
+}
+
 function nlCliPlugin() {
   return {
     name: 'roboforge-nl-cli',
@@ -155,6 +216,7 @@ function nlCliPlugin() {
       server.middlewares.use('/api/redesign', planCliRoute(REDESIGN_INSTRUCTION, (p, ms) => ({
         design: p, durationMs: ms,
       })))
+      server.middlewares.use('/api/concept', conceptRoute())
     },
   }
 }

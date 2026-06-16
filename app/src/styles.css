@@ -279,6 +279,32 @@ a.rf-src { text-decoration: none; cursor: pointer; margin-left: 2px; }
 /* ---- sourcing fallback (catalog can't fill a slot → find new parts) ---- */
 .rf-source { white-space: normal; padding: 2px 0; }
 
+/* ---- feasibility badge ---- */
+.rf-feas { border: 1px solid #b0b0b0; padding: 4px 6px; margin: 0 0 6px; background: #f3f3f3; }
+.rf-feas-head { font-size: 11px; }
+.rf-feas-factors { margin-top: 2px; font-size: 10px; }
+.rf-feas-bar { height: 7px; background: #d8d8d8; border: 1px solid #9a9a9a; margin: 3px 0; }
+.rf-feas-bar span { display: block; height: 100%; background: #2f9e44; }
+.rf-feas-prototypeready { border-left: 4px solid #2f9e44; }
+.rf-feas-prototypeready .rf-feas-bar span { background: #2f9e44; }
+.rf-feas-feasible { border-left: 4px solid #1971c2; }
+.rf-feas-feasible .rf-feas-bar span { background: #1971c2; }
+.rf-feas-ambitious { border-left: 4px solid #e88a00; }
+.rf-feas-ambitious .rf-feas-bar span { background: #e88a00; }
+.rf-feas-speculative { border-left: 4px solid #c92a2a; }
+.rf-feas-speculative .rf-feas-bar span { background: #c92a2a; }
+
+/* ---- concept art (Codex SVG 상상도) ---- */
+.rf-concept { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.rf-concept-bar { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.rf-concept-bar button { font-size: 11px; min-height: 18px; padding: 0 6px; }
+.rf-concept-art {
+  flex: 1; min-height: 0; overflow: auto; background: #fff;
+  border: 2px solid; border-color: #808080 #fff #fff #808080;
+  display: flex; align-items: center; justify-content: center; padding: 4px;
+}
+.rf-concept-art svg { max-width: 100%; height: auto; }
+
 /* ---- design tuner (editable specs + wiring) ---- */
 .rf-tuner fieldset { margin-bottom: 6px; }
 .rf-tuner-bar { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px; }

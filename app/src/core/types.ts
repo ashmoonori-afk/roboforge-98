@@ -52,7 +52,8 @@ export interface Board {
 
 export type LocomotionType =
   | 'wheeled_differential' | 'wheeled_omni' | 'tracked'
-  | 'legged_quadruped' | 'arm_manipulator' | 'stationary' | 'humanoid' | 'unknown'
+  | 'legged_quadruped' | 'arm_manipulator' | 'stationary' | 'humanoid'
+  | 'aerial_multirotor' | 'unknown'
 
 export interface RequirementsSpec {
   taskSummary: string
@@ -113,6 +114,13 @@ export interface DesignController {
   mcu?: string
   pins: string[]
 }
+/** Buildability assessment for a design (LLM-judged). */
+export type FeasibilityLevel = 'Prototype-ready' | 'Feasible' | 'Ambitious' | 'Speculative'
+export interface Feasibility {
+  level: FeasibilityLevel
+  score: number        // 0-100 overall buildability
+  factors: string[]    // what drives the rating (availability, power, complexity, cost)
+}
 export interface DesignPlan {
   summary: string
   controller: DesignController | null
@@ -120,4 +128,5 @@ export interface DesignPlan {
   connections: DesignConnection[]
   steps: string[]
   warnings?: string[]
+  feasibility?: Feasibility
 }

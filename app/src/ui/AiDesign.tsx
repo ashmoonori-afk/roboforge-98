@@ -23,6 +23,17 @@ export function AiDesign() {
   return (
     <div className="rf-ai">
       {plan.summary && <p className="rf-ai-sum">{plan.summary}</p>}
+      {plan.feasibility && (
+        <div className={`rf-feas rf-feas-${plan.feasibility.level.replace(/[^a-z]/gi, '').toLowerCase()}`}>
+          <span className="rf-feas-head">
+            Feasibility: <b>{plan.feasibility.level}</b> · {plan.feasibility.score}/100
+          </span>
+          <div className="rf-feas-bar"><span style={{ width: `${plan.feasibility.score}%` }} /></div>
+          {plan.feasibility.factors.length > 0 && (
+            <div className="rf-dim rf-feas-factors">{plan.feasibility.factors.join(' · ')}</div>
+          )}
+        </div>
+      )}
       {plan.controller && (
         <p className="rf-dim" style={{ margin: '0 0 6px' }}>
           <b>Controller:</b> {plan.controller.name}

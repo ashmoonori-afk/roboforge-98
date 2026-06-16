@@ -7,6 +7,7 @@ import { McuPanel } from './ui/McuPanel'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { PartsSuggestion } from './ui/PartsSuggestion'
 import { AiDesign } from './ui/AiDesign'
+import { ConceptArt } from './ui/ConceptArt'
 import { DesignTuner } from './ui/DesignTuner'
 import { Tooltip } from './ui/Tooltip'
 import { Taskbar } from './ui/Taskbar'
@@ -26,6 +27,9 @@ export default function App() {
 
         <Panel title="AI Design Assistant" tall>
           <AiDesign />
+        </Panel>
+        <Panel title="Concept Art — as-assembled (Codex)" tall>
+          <ConceptArt />
         </Panel>
         <Panel title="Design Tuner — tweak specs & wiring" span={2} tall>
           <DesignTuner />

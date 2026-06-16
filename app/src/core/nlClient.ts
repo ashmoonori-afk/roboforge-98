@@ -3,8 +3,10 @@ import { normalizeScene, type SceneSpec } from './scene'
 
 const LOCO: LocomotionType[] = [
   'wheeled_differential', 'wheeled_omni', 'tracked', 'legged_quadruped',
-  'arm_manipulator', 'stationary', 'humanoid', 'unknown',
+  'arm_manipulator', 'stationary', 'humanoid', 'aerial_multirotor', 'unknown',
 ]
+
+const FEAS_LEVELS = ['Prototype-ready', 'Feasible', 'Ambitious', 'Speculative']
 
 /** Coerce an untrusted CLI JSON blob into a valid RequirementsSpec. */
 function normalize(raw: Record<string, unknown>, prompt: string): RequirementsSpec {
@@ -69,8 +71,20 @@ function normalizePlan(raw: unknown): DesignPlan | null {
   const wired = connections.filter((w) => ids.has(w.from))
   const dropped = connections.length - wired.length
   const warnings = dropped ? [`${dropped} connection(s) referenced unknown components`] : []
+  // Feasibility (LLM-judged buildability), defensively parsed.
+  const f = r.feasibility as Record<string, unknown> | undefined
+  let feasibility: DesignPlan['feasibility']
+  if (f && typeof f === 'object') {
+    const level = FEAS_LEVELS.includes(str(f.level) as never) ? (str(f.level) as never) : 'Feasible'
+    const rawScore = typeof f.score === 'number' && isFinite(f.score) ? f.score : 60
+    feasibility = {
+      level,
+      score: Math.max(0, Math.min(100, Math.round(rawScore))),
+      factors: arr(f.factors).filter((x): x is string => typeof x === 'string').slice(0, 8),
+    }
+  }
   if (!components.length && !summary) return null
-  return { summary, controller, components, connections: wired, steps, warnings }
+  return { summary, controller, components, connections: wired, steps, warnings, feasibility }
 }
 
 export interface NlResult {
@@ -133,6 +147,18 @@ export async function designPlanFromCli(prompt: string, mode: 'fast' | 'quality'
   const result: PlanResult = { plan: normalizePlan(data.design), durationMs: data.durationMs ?? null }
   planCache.set(key, result)
   return result
+}
+
+/** Concept illustration (SVG "상상도") of the assembled robot via /api/concept (Codex CLI). */
+export async function conceptFromCli(prompt: string): Promise<{ svg: string; durationMs: number | null }> {
+  const res = await fetch('/api/concept', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  })
+  if (!res.ok) throw new Error(`endpoint ${res.status}`)
+  const data = (await res.json()) as { ok: boolean; svg?: string; error?: string; durationMs?: number | null }
+  if (!data.ok || !data.svg) throw new Error(data.error || 'concept failed')
+  return { svg: data.svg, durationMs: data.durationMs ?? null }
 }
 
 /** Re-design / refine an EXISTING plan via /api/redesign. Not cached (plan mutates). */
