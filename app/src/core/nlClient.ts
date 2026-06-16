@@ -82,6 +82,20 @@ function normalizePlan(raw: unknown): DesignPlan | null {
       score: Math.max(0, Math.min(100, Math.round(rawScore))),
       factors: arr(f.factors).filter((x): x is string => typeof x === 'string').slice(0, 8),
     }
+  } else if (components.length) {
+    // Heuristic fallback so a feasibility level always shows even when the LLM
+    // omits it (observed on large fast-mode designs).
+    let score = 86
+    if (components.length > 40) score -= 12
+    if (components.length > 60) score -= 10
+    if (wired.length > 100) score -= 6
+    score = Math.max(45, Math.min(90, score))
+    const level = (score >= 80 ? 'Prototype-ready' : score >= 65 ? 'Feasible' : score >= 50 ? 'Ambitious' : 'Speculative') as never
+    feasibility = {
+      level,
+      score,
+      factors: [`Estimated from design size (${components.length} parts, ${wired.length} wires) — model did not return a rating`],
+    }
   }
   if (!components.length && !summary) return null
   return { summary, controller, components, connections: wired, steps, warnings, feasibility }
