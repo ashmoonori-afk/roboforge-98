@@ -25,6 +25,7 @@ export function Viewport3D() {
   const cam = useStore((s) => s.cam)
   const scene = useStore((s) => s.scene)
   const plan = useStore((s) => s.plan)
+  const generating = useStore((s) => s.generating)
 
   const onDrop = (e: RDragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -63,7 +64,13 @@ export function Viewport3D() {
               ? <SceneRenderer scene={scene} driving={driving} />
               : (
                 <Html center className="rf-empty3d">
-                  <div>Press <b>Generate design</b> — the LLM builds the 3D model here.</div>
+                  {generating ? (
+                    <div><b>Generating 3D…</b><br />the LLM is modeling your robot (~30–60s)</div>
+                  ) : design ? (
+                    <div>No 3D scene returned.<br />3D generation needs the local CLI — run <code>npm run dev</code>, not a static preview.</div>
+                  ) : (
+                    <div>Press <b>Generate design</b> — the LLM builds the 3D model here.</div>
+                  )}
                 </Html>
               )}
           </group>

@@ -38,6 +38,7 @@ interface AppState {
   boardId: string
   assignments: Assignment[]
   driving: boolean
+  generating: boolean
   status: string
   hover: HoverInfo | null
   logs: LogEntry[]
@@ -51,6 +52,7 @@ interface AppState {
   setBoard: (id: string) => void
   setAssignments: (a: Assignment[]) => void
   setDriving: (b: boolean) => void
+  setGenerating: (b: boolean) => void
   setStatus: (s: string) => void
   setHover: (h: HoverInfo | null) => void
   pushLog: (kind: LogKind, text: string) => void
@@ -65,6 +67,7 @@ export const useStore = create<AppState>((set) => ({
   boardId: 'uno',
   assignments: [],
   driving: false,
+  generating: false,
   status: 'Ready. Describe a robot, then press Drive.',
   hover: null,
   logs: [],
@@ -90,6 +93,7 @@ export const useStore = create<AppState>((set) => ({
     })),
   setAssignments: (assignments) => set({ assignments }),
   setDriving: (driving) => set({ driving }),
+  setGenerating: (generating) => set({ generating }),
   setStatus: (status) => set({ status }),
   setHover: (hover) => set({ hover }),
   pushLog: (kind, text) => set((s) => ({ logs: append(s.logs, kind, text) })),

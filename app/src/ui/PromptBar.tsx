@@ -23,12 +23,14 @@ export function PromptBar() {
   }, [])
   const setDesign = useStore((s) => s.setDesign)
   const setStatus = useStore((s) => s.setStatus)
+  const setGenerating = useStore((s) => s.setGenerating)
   const pushLog = useStore((s) => s.pushLog)
   const setScene = useStore((s) => s.setScene)
   const setPlan = useStore((s) => s.setPlan)
 
   const generate = async () => {
     setBusy(true)
+    setGenerating(true)
     setStatus('Generating… (summoning local CLI)')
     setScene(null)
     setPlan(null)
@@ -73,6 +75,7 @@ export function PromptBar() {
       pushLog('warn', 'AI design unavailable (CLI)')
     }
     setBusy(false)
+    setGenerating(false)
   }
 
   return (
