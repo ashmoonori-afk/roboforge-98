@@ -17,7 +17,7 @@ export function PartsSuggestion() {
         </p>
         {plan.components.map((c) => (
           <div key={c.id} className="rf-sug rf-bom">
-            <span className="rf-tag">{(c.iface || '—').slice(0, 4)}</span> {c.name}{c.qty > 1 ? ` ×${c.qty}` : ''}{' '}
+            <b>{c.label}</b> <span className="rf-tag">{(c.iface || '—').slice(0, 4)}</span> {c.name}{c.qty > 1 ? ` ×${c.qty}` : ''}{c.specs ? <span className="rf-dim"> · {c.specs}</span> : null}{' '}
             {buyLinks(c.name).map((l) => (
               <a key={l.src} className={`rf-src rf-src-${l.src}`} href={l.url} target="_blank" rel="noreferrer" title={`search ${l.src}`}>{l.src}</a>
             ))}

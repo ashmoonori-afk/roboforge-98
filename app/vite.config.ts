@@ -18,9 +18,13 @@ const SPEC_INSTRUCTION = [
 ].join('\n')
 
 const DESIGN_INSTRUCTION = [
-  'You are a robotics design engineer. From the user\'s robot goal, output ONLY one minified JSON',
-  'object (no prose, no fences): {"summary":string,"controller":{"name":string,"mcu":string,"pins":[string]},"components":[{"id":string,"name":string,"category":string,"iface":"PWM"|"I2C"|"SPI"|"UART"|"ANALOG"|"DIGITAL"|"POWER"|"GND"|"none","qty":integer,"note":string}],"connections":[{"from":componentId,"pin":controllerPin,"signal":string}],"steps":[string]}.',
-  'Pick a real microcontroller; include 8-16 DIVERSE components across categories — sensors, actuators/motors, motor drivers, power (battery + regulator), comms (radio/USB/Bluetooth), passives (resistors/capacitors), connectors, and mounting/mechanical hardware; wire EACH electrical component to a specific controller pin in "connections" consistent with its iface; give 4-8 assembly steps. Output JSON only.',
+  'You are a senior robotics/electronics design engineer. From the user\'s robot goal, output ONLY one minified JSON object (no prose, no fences):',
+  '{"summary":string,"controller":{"name":string,"mcu":string,"pins":[string]},"components":[{"id":string,"label":string,"name":string,"category":string,"iface":"PWM"|"I2C"|"SPI"|"UART"|"ANALOG"|"DIGITAL"|"POWER"|"GND"|"none","specs":string,"qty":integer,"note":string}],"connections":[{"from":componentId,"pin":controllerPin,"net":string,"signal":string}],"steps":[string]}.',
+  'Include AS MANY components as a real build needs — typically 20-40: every sensor, actuator, motor driver, power source, voltage regulator, level shifter, decoupling/bulk capacitor, pull-up/current-limit resistor, connector, fuse, switch, indicator LED and mounting/mechanical part. Do not omit support parts.',
+  'LABEL every component with a reference designator in "label" (U#, M#, R#, C#, D#, J#, SW#, LED#, REG#).',
+  'For "specs", state the KEY electrical specs you SELECTED to MATCH the requirement (voltage, current, interface/I2C-address, value, torque, etc.); judge each part against the goal and justify the choice in "note".',
+  'Design the WIRING STRUCTURE: give EVERY connection a "net" name so connections form coherent nets — power rails (5V, 3V3, VIN), grounds (GND), buses (I2C_SDA, I2C_SCL, SPI_MOSI/MISO/SCK, UART_TX/RX) and signal nets (PWM_M1A, etc.). Wire each electrical component to the right controller pins/nets for its iface.',
+  'Give 5-10 assembly + wiring steps. Output JSON only.',
 ].join('\n')
 
 function runClaude(prompt: string, model: string): Promise<string> {
@@ -31,7 +35,7 @@ function runClaude(prompt: string, model: string): Promise<string> {
     })
     let out = ''
     let err = ''
-    const timer = setTimeout(() => { child.kill(); reject(new Error('claude CLI timeout')) }, 180000)
+    const timer = setTimeout(() => { child.kill(); reject(new Error('claude CLI timeout')) }, 280000)
     child.stdout.on('data', (d) => (out += d))
     child.stderr.on('data', (d) => (err += d))
     child.on('error', (e) => { clearTimeout(timer); reject(e) })

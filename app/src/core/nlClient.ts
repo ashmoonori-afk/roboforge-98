@@ -43,22 +43,24 @@ function normalizePlan(raw: unknown): DesignPlan | null {
         pins: arr(c.pins).filter((x): x is string => typeof x === 'string').slice(0, 80),
       }
     : null
-  const components = arr(r.components).slice(0, 28).map((x, i) => {
+  const components = arr(r.components).slice(0, 48).map((x, i) => {
     const o = x as Record<string, unknown>
     return {
       id: str(o.id) || `c${i + 1}`,
+      label: str(o.label) || `C${i + 1}`,
       name: str(o.name, 'Component'),
       category: str(o.category, 'OTHER'),
       iface: str(o.iface ?? o.interface, 'none'),
+      specs: str(o.specs),
       qty: typeof o.qty === 'number' && isFinite(o.qty) ? Math.max(1, Math.round(o.qty)) : 1,
       note: str(o.note) || undefined,
     }
   })
   const connections = arr(r.connections)
-    .slice(0, 80)
+    .slice(0, 120)
     .map((x) => {
       const o = x as Record<string, unknown>
-      return { from: str(o.from), pin: str(o.pin), signal: str(o.signal) || undefined }
+      return { from: str(o.from), pin: str(o.pin), net: str(o.net) || undefined, signal: str(o.signal) || undefined }
     })
     .filter((x) => x.from && x.pin)
   const steps = arr(r.steps).filter((x): x is string => typeof x === 'string').slice(0, 14)

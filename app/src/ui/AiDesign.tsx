@@ -35,8 +35,9 @@ export function AiDesign() {
         <ul className="tree-view rf-ai-comp">
           {plan.components.map((c) => (
             <li key={c.id}>
-              <span className="rf-tag">{(c.iface || '—').slice(0, 4)}</span> {c.name}
+              <b>{c.label}</b> <span className="rf-tag">{(c.iface || '—').slice(0, 4)}</span> {c.name}
               {c.qty > 1 ? ` ×${c.qty}` : ''}
+              {c.specs ? <span className="rf-dim"> · {c.specs}</span> : null}
               {c.note ? <span className="rf-dim"> — {c.note}</span> : null}
             </li>
           ))}
@@ -50,8 +51,10 @@ export function AiDesign() {
             {conns.map((cn, i) => {
               const y = 14 + i * rowH + rowH / 2
               const color = WIRE[i % WIRE.length]
-              const name = compName(cn.from)
-              const label = (name.length > 20 ? name.slice(0, 19) + '…' : name) + (cn.signal ? ` · ${cn.signal}` : '')
+              const c0 = plan.components.find((c) => c.id === cn.from)
+              const lbl = c0?.label ?? compName(cn.from)
+              const net = cn.net ?? cn.signal ?? ''
+              const label = `${lbl}${net ? ' · ' + net : ''}`
               return (
                 <g key={i}>
                   <path d={`M150,${y} C175,${y} 195,${y} 214,${y}`} stroke={color} strokeWidth={2} fill="none" />

@@ -21,6 +21,17 @@ const COMP_H = 24
 const BOT_ROWS = [224, 236]
 const WIRE = ['#d9480f', '#1971c2', '#2f9e44', '#9c36b5', '#e8590c', '#0c8599', '#c2255c', '#5f3dc4']
 
+/** Colour a jumper wire by its net type so the wiring structure reads at a glance. */
+function netColor(net: string | undefined, fallback: string): string {
+  const n = (net || '').toUpperCase()
+  if (/GND|GROUND/.test(n)) return '#333333'
+  if (/5V|3V3|3\.3|VIN|VCC|VBAT|PWR|POWER|BATT/.test(n)) return '#d23b3b'
+  if (/I2C|SDA|SCL/.test(n)) return '#1971c2'
+  if (/SPI|MOSI|MISO|SCK/.test(n)) return '#7048e8'
+  if (/UART|TX|RX/.test(n)) return '#2f9e44'
+  return fallback
+}
+
 function rail(y: number, color: string) {
   return (
     <g>
@@ -45,7 +56,7 @@ function PlanBreadboard({ plan }: { plan: DesignPlan }) {
   const pins = [...new Set(plan.connections.map((c) => c.pin))].slice(0, 36)
   const order: string[] = []
   for (const c of plan.connections) if (!order.includes(c.from)) order.push(c.from)
-  const comps = order.slice(0, 12)
+  const comps = order.slice(0, 16)
   const colW = (X1 - X0) / Math.max(1, pins.length)
   const cx = (i: number) => X0 + i * colW + colW / 2
   const compW = (X1 - X0) / Math.max(1, comps.length)
@@ -68,7 +79,7 @@ function PlanBreadboard({ plan }: { plan: DesignPlan }) {
       </text>
 
       {/* jumper wires: each connection pin-column → component block */}
-      {plan.connections.slice(0, 60).map((cn, i) => {
+      {plan.connections.slice(0, 120).map((cn, i) => {
         const pi = pins.indexOf(cn.pin)
         const ci = comps.indexOf(cn.from)
         if (pi < 0 || ci < 0) return null
@@ -78,7 +89,7 @@ function PlanBreadboard({ plan }: { plan: DesignPlan }) {
           <path
             key={i}
             d={`M${x1},${STRIP_Y + STRIP_H} C${x1},${STRIP_Y + STRIP_H + 22} ${x2},${COMP_Y - 22} ${x2},${COMP_Y}`}
-            stroke={color(cn.from)}
+            stroke={netColor(cn.net, color(cn.from))}
             strokeWidth={1.6}
             fill="none"
             opacity={0.85}
@@ -114,8 +125,8 @@ function PlanBreadboard({ plan }: { plan: DesignPlan }) {
         return (
           <g key={id} onMouseEnter={hov} onMouseMove={hov} onMouseLeave={() => setHover(null)} style={{ cursor: 'help' }}>
             <rect x={x - w / 2} y={COMP_Y} width={w} height={COMP_H} rx={2} fill="#ffffff" stroke={color(id)} strokeWidth={1.4} />
-            <text x={x} y={COMP_Y + 10} fontSize={6.5} textAnchor="middle" fontWeight="bold" fill={color(id)}>{(c?.iface || '—').slice(0, 4)}</text>
-            <text x={x} y={COMP_Y + 19} fontSize={5.6} textAnchor="middle" fill="#1a202c">{(c?.name ?? id).split(' ')[0].slice(0, 8)}</text>
+            <text x={x} y={COMP_Y + 10} fontSize={6.5} textAnchor="middle" fontWeight="bold" fill={color(id)}>{c?.label ?? '—'}</text>
+            <text x={x} y={COMP_Y + 19} fontSize={5.4} textAnchor="middle" fill="#1a202c">{(c?.name ?? id).split(' ')[0].slice(0, 8)}</text>
           </g>
         )
       })}

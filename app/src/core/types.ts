@@ -93,15 +93,18 @@ export interface DesignResult {
 // possibly complex configuration — controller + components + wiring + steps.
 export interface DesignComponent {
   id: string
+  label: string      // reference designator: U1, M1, R1, C1, D1, J1 ...
   name: string
   category: string
   iface: string      // PWM | I2C | SPI | UART | ANALOG | DIGITAL | POWER | GND | none
+  specs: string      // key electrical specs the LLM matched (voltage/current/interface/value)
   qty: number
   note?: string
 }
 export interface DesignConnection {
   from: string       // component id
   pin: string        // controller pin label
+  net?: string       // named net: 5V, GND, I2C_SDA, PWM_M1A ...
   signal?: string
 }
 export interface DesignController {
