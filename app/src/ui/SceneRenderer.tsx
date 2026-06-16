@@ -5,6 +5,9 @@ import { RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import type { SceneNode, SceneSpec } from '../core/scene'
 
+// Reused each frame to avoid per-frame allocation when spinning dynamic parts.
+const SPIN_AXIS = new THREE.Vector3()
+
 /** Physically-based material — clearcoat + IBL reflections make primitives read
  *  as real manufactured surfaces instead of flat blocks (drei/three, MIT). */
 function Mat({ color, metalness, roughness }: { color: string; metalness: number; roughness: number }) {
@@ -74,9 +77,15 @@ function NodeView({ node, driving }: { node: SceneNode; driving: boolean }) {
     const o = ref.current
     if (!o || !driving) return
     const d = Math.min(dt, 0.05) // guard against huge dt on first frame / tab refocus
-    if (node.spin) {
-      // spin about the node's OWN local axes (quaternion) so a wheel rolls about
-      // its hub regardless of its base orientation — Euler accumulation tumbles.
+    if (node.axis && node.spinRate) {
+      // Dynamic part: rotate about its defined hub axis (given in the scene/world
+      // frame — the visible direction the hub points) through its own origin,
+      // which is the rotation centre. A wheel hub along world X => axis [1,0,0].
+      SPIN_AXIS.set(node.axis[0], node.axis[1], node.axis[2]).normalize()
+      o.rotateOnWorldAxis(SPIN_AXIS, Math.max(-16, Math.min(16, node.spinRate)) * d)
+    } else if (node.spin) {
+      // Legacy: spin about the node's own local axes (quaternion) — Euler
+      // accumulation gimbal-tumbles oriented wheels.
       const w = (v: number) => Math.max(-12, Math.min(12, v)) * d
       if (node.spin[0]) o.rotateX(w(node.spin[0]))
       if (node.spin[1]) o.rotateY(w(node.spin[1]))

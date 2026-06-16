@@ -15,6 +15,12 @@ export interface SceneNode {
   color: string
   metalness: number
   roughness: number
+  /** Dynamic part (wheel/gear/rotor): unit axis the part spins about, in the
+   *  node's LOCAL frame. The node's own origin is the rotation centre. */
+  axis?: [number, number, number]
+  /** Signed angular speed (rad/s) about `axis` — sign sets the direction. */
+  spinRate?: number
+  /** Legacy per-axis angular velocity (rad/s). Used when `axis` is absent. */
   spin?: [number, number, number]
   swing?: Swing
   children?: SceneNode[]
@@ -47,6 +53,13 @@ function node(raw: unknown, budget: { n: number }, depth: number): SceneNode | n
     color: hex(r.color),
     metalness: clamp01(n(r.metalness, 0.6)),
     roughness: clamp01(n(r.roughness, 0.5)),
+  }
+  if (Array.isArray(r.axis)) {
+    const a = vec3(r.axis, [1, 0, 0])
+    if (a[0] || a[1] || a[2]) out.axis = a
+  }
+  if (typeof r.spinRate === 'number' && isFinite(r.spinRate)) {
+    out.spinRate = Math.max(-16, Math.min(16, r.spinRate))
   }
   if (Array.isArray(r.spin)) out.spin = vec3(r.spin, [0, 0, 0])
   const sw = r.swing as Record<string, unknown> | undefined

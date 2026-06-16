@@ -12,9 +12,11 @@ const SPEC_INSTRUCTION = [
   '"spec" = {"taskSummary":string,"locomotionType":"wheeled_differential"|"wheeled_omni"|"tracked"|"legged_quadruped"|"arm_manipulator"|"stationary"|"humanoid"|"unknown","wheelCount":integer|null,"armCount":integer|null,"payloadKg":number|null,"manipulation":boolean,"environmentIndoor":boolean,"ambiguities":string[]}.',
   'Use "stationary" for fixed-base/surgical/multi-arm (set armCount); "humanoid" for automaton/android/bipedal figures.',
   '"scene" = {"name":string,"nodes":[Node,...]} — a 3D model of the robot from primitives that the app renders directly.',
-  'Node = {"shape":"box"|"cylinder"|"sphere"|"cone"|"torus"|"gear"|"group","size":[numbers],"pos":[x,y,z],"rot":[x,y,z],"color":"#hex","metalness":0..1,"roughness":0..1,"spin":[x,y,z]?,"swing":{"axis":"x"|"y"|"z","amp":number,"freq":number}?,"children":[Node]?}.',
+  'Node = {"shape":"box"|"cylinder"|"sphere"|"cone"|"torus"|"gear"|"group","size":[numbers],"pos":[x,y,z],"rot":[x,y,z],"color":"#hex","metalness":0..1,"roughness":0..1,"axis":[x,y,z]?,"spinRate":number?,"swing":{"axis":"x"|"y"|"z","amp":number,"freq":number}?,"children":[Node]?}.',
   'size by shape: box[w,h,d], cylinder[radiusTop,radiusBottom,height], sphere[r], cone[r,h], torus[r,tube], gear[r,teeth,thickness], group=none.',
-  'Compose a clearly RECOGNIZABLE model (~10-16 nodes); match colour/material (brass gears, white medical housing, black tires, dark joints). Units are meters; height ~1.5-2.5; lowest point near y=0. Use "spin" (rad/s) for wheels/gears/rotors and "swing" for limbs. Output JSON only.',
+  'DYNAMIC PARTS (wheels, gears, rotors, drums): the part is its OWN node and its geometry is CENTERED on the node origin (pos) so that origin is the rotation centre. Give "axis" = the unit vector the hub points along in the SCENE frame (Y is up, robot forward is -Z) i.e. the visible spin axis, and "spinRate" = signed rad/s (sign sets direction).',
+  'The robot drives FORWARD along -Z. Ground wheels mount with their hub axis HORIZONTAL and across the robot (world X), so axis is [1,0,0] (model the cylinder lying on its side, e.g. rot=[0,0,1.5708]); for forward roll set spinRate so the wheel top moves toward -Z (typical |spinRate| 6-10). Use "swing" for limbs/arms instead of axis/spinRate.',
+  'Compose a clearly RECOGNIZABLE model (~10-16 nodes); match colour/material (brass gears, white medical housing, black tires, dark joints). Units are meters; height ~1.5-2.5; lowest point near y=0. Output JSON only.',
 ].join('\n')
 
 const DESIGN_INSTRUCTION = [
