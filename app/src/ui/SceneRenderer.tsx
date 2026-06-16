@@ -73,10 +73,14 @@ function NodeView({ node, driving }: { node: SceneNode; driving: boolean }) {
   useFrame((state, dt) => {
     const o = ref.current
     if (!o || !driving) return
+    const d = Math.min(dt, 0.05) // guard against huge dt on first frame / tab refocus
     if (node.spin) {
-      o.rotation.x += node.spin[0] * dt
-      o.rotation.y += node.spin[1] * dt
-      o.rotation.z += node.spin[2] * dt
+      // spin about the node's OWN local axes (quaternion) so a wheel rolls about
+      // its hub regardless of its base orientation — Euler accumulation tumbles.
+      const w = (v: number) => Math.max(-12, Math.min(12, v)) * d
+      if (node.spin[0]) o.rotateX(w(node.spin[0]))
+      if (node.spin[1]) o.rotateY(w(node.spin[1]))
+      if (node.spin[2]) o.rotateZ(w(node.spin[2]))
     }
     if (node.swing) {
       const base = node.rot

@@ -44,11 +44,12 @@ body { background: var(--teal); }
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  min-height: 150px;
-  max-height: 460px;
+  min-height: 120px;
+  height: 300px;          /* default; user drags the bottom edge to resize */
   overflow: auto;
+  resize: vertical;       /* restore manual resize (height); width is responsive */
 }
-.rf-panel-body.rf-panel-tall { min-height: 460px; max-height: min(78vh, 760px); }
+.rf-panel-body.rf-panel-tall { height: 480px; }
 
 /* ---- windows (legacy, kept for any standalone use) ---- */
 .rf-window { box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35); }
