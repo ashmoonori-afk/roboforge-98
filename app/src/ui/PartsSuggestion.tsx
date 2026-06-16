@@ -4,6 +4,31 @@ import type { PartCategory, SpecValue } from '../core/types'
 import { useStore } from '../state/store'
 import { buyLinks } from '../core/export'
 
+// When our local catalog can't satisfy a required slot, search real distributors
+// for new parts. Maps each slot to a concrete sourcing query.
+const SOURCE_QUERY: Record<PartCategory, string> = {
+  MOTOR: 'dc gearmotor robot',
+  SERVO: 'servo motor robot',
+  MICROCONTROLLER: 'microcontroller dev board',
+  SENSOR: 'robot sensor module',
+  BATTERY: 'lipo battery pack',
+  WHEEL: 'robot wheel hub',
+  BRACKET: 'servo bracket mount',
+  CABLE: 'jumper wire connector',
+  OTHER: 'robotics component',
+}
+
+/** Distributor search links for a sourcing query (find parts we don't stock). */
+function SourceLinks({ query }: { query: string }) {
+  return (
+    <>
+      {buyLinks(query).map((l) => (
+        <a key={l.src} className={`rf-src rf-src-${l.src}`} href={l.url} target="_blank" rel="noreferrer" title={`search ${l.src}: ${query}`}>{l.src}</a>
+      ))}
+    </>
+  )
+}
+
 export function PartsSuggestion() {
   const design = useStore((s) => s.design)
   const setHover = useStore((s) => s.setHover)
@@ -33,6 +58,7 @@ export function PartsSuggestion() {
     <div>
       <p style={{ marginTop: 0 }} className="rf-dim">
         Buyable options — <b>Amazon</b> + <b>Nexar</b> + <b>Mouser</b>. Hover for specs.
+        Slots our catalog can't fill show <b>source new</b> distributor searches.
       </p>
       {slots.map((slot) => {
         if (slot === 'MICROCONTROLLER') {
@@ -63,8 +89,22 @@ export function PartsSuggestion() {
             </fieldset>
           )
         }
-        const opts = parts.filter((p) => p.category === slot).slice(0, 3)
-        if (opts.length === 0) return null
+        const matches = parts.filter((p) => p.category === slot)
+        const opts = matches.slice(0, 3)
+        const query = SOURCE_QUERY[slot] ?? `${slot.toLowerCase()} robot part`
+
+        // Catalog can't reflect this requirement → search distributors for new parts.
+        if (opts.length === 0) {
+          return (
+            <fieldset key={slot}>
+              <legend>{slot}</legend>
+              <div className="rf-sug rf-source">
+                <span className="rf-dim">No catalog part — source new:</span>{' '}
+                <SourceLinks query={query} />
+              </div>
+            </fieldset>
+          )
+        }
         return (
           <fieldset key={slot}>
             <legend>{slot}</legend>
@@ -89,6 +129,12 @@ export function PartsSuggestion() {
                 </div>
               )
             })}
+            {matches.length < 3 && (
+              <div className="rf-sug rf-source">
+                <span className="rf-dim">Need more? source new:</span>{' '}
+                <SourceLinks query={query} />
+              </div>
+            )}
           </fieldset>
         )
       })}

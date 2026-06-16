@@ -19,11 +19,38 @@ body { background: var(--teal); }
   position: absolute;
   inset: 0;
   background: var(--teal);
-  overflow: hidden;
+  overflow: auto;
   user-select: none;
 }
 
-/* ---- windows ---- */
+/* ---- responsive panel grid (fills viewport, never clips) ---- */
+.rf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 8px;
+  padding: 10px 10px 44px;   /* bottom space clears the fixed taskbar */
+  align-content: start;
+}
+.rf-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+.rf-panel .title-bar-text { font-weight: bold; }
+.rf-panel-body {
+  margin: 0;
+  padding: 6px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 150px;
+  max-height: 460px;
+  overflow: auto;
+}
+.rf-panel-body.rf-panel-tall { min-height: 460px; max-height: min(78vh, 760px); }
+
+/* ---- windows (legacy, kept for any standalone use) ---- */
 .rf-window { box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35); }
 .rf-window .window-body { margin: 0; padding: 6px; box-sizing: border-box; }
 .rf-window .title-bar-text { font-weight: bold; }
@@ -134,8 +161,9 @@ body { background: var(--teal); }
 
 /* ---- taskbar ---- */
 .rf-taskbar {
-  position: absolute;
+  position: fixed;
   left: 0; right: 0; bottom: 0;
+  z-index: 10;
   height: 30px;
   display: flex;
   align-items: center;
@@ -183,6 +211,10 @@ body { background: var(--teal); }
 
 /* ---- viewport fills its (resizable) window ---- */
 .rf-viewport { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.rf-empty3d {
+  width: 220px; text-align: center; color: #cfd8e3; font-size: 12px;
+  text-shadow: 0 1px 2px #000; pointer-events: none; user-select: none;
+}
 
 /* ---- activity log ---- */
 .rf-logwrap {
@@ -240,3 +272,6 @@ body { background: var(--teal); }
 /* ---- AI BOM rows (design parts → buy links) ---- */
 .rf-bom { white-space: normal; padding: 2px 0; }
 a.rf-src { text-decoration: none; cursor: pointer; margin-left: 2px; }
+
+/* ---- sourcing fallback (catalog can't fill a slot → find new parts) ---- */
+.rf-source { white-space: normal; padding: 2px 0; }

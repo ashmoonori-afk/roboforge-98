@@ -1,4 +1,4 @@
-import { Window } from './ui/Window'
+import { Panel } from './ui/Panel'
 import { PromptBar } from './ui/PromptBar'
 import { PartsBin } from './ui/PartsBin'
 import { LogWindow } from './ui/LogWindow'
@@ -10,35 +10,39 @@ import { AiDesign } from './ui/AiDesign'
 import { Tooltip } from './ui/Tooltip'
 import { Taskbar } from './ui/Taskbar'
 
+// Responsive Windows-98 desktop: panels flow in a fluid grid (auto-fit columns),
+// so the UI fills the screen and never clips, at any viewport size / zoom.
 export default function App() {
   return (
     <div className="rf-desktop">
-      <Window title="Design Prompt" x={12} y={10} width={300} height={150}>
-        <PromptBar />
-      </Window>
-      <Window title="Parts Bin" x={12} y={196} width={300} height={168}>
-        <PartsBin />
-      </Window>
-      <Window title="Activity Log" x={12} y={400} width={300} height={150}>
-        <LogWindow />
-      </Window>
+      <div className="rf-grid">
+        <Panel title="Robot Viewport — Mobility Demo" span={2} tall>
+          <Viewport3D />
+        </Panel>
+        <Panel title="Design Prompt">
+          <PromptBar />
+        </Panel>
 
-      <Window title="Robot Viewport — Mobility Demo" x={326} y={10} width={552} height={360}>
-        <Viewport3D />
-      </Window>
-      <Window title="Microprocessor System" x={326} y={406} width={552} height={300}>
-        <McuPanel />
-      </Window>
+        <Panel title="AI Design Assistant" tall>
+          <AiDesign />
+        </Panel>
+        <Panel title="Microprocessor System" span={2}>
+          <McuPanel />
+        </Panel>
 
-      <Window title="Properties" x={892} y={10} width={316} height={206}>
-        <PropertiesPanel />
-      </Window>
-      <Window title="Parts Suggestion" x={892} y={228} width={316} height={168}>
-        <PartsSuggestion />
-      </Window>
-      <Window title="AI Design Assistant" x={892} y={406} width={316} height={402}>
-        <AiDesign />
-      </Window>
+        <Panel title="Parts Suggestion">
+          <PartsSuggestion />
+        </Panel>
+        <Panel title="Properties">
+          <PropertiesPanel />
+        </Panel>
+        <Panel title="Parts Bin">
+          <PartsBin />
+        </Panel>
+        <Panel title="Activity Log">
+          <LogWindow />
+        </Panel>
+      </div>
 
       <Tooltip />
       <Taskbar />

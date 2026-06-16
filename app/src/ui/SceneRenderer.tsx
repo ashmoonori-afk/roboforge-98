@@ -1,8 +1,24 @@
 import { useRef } from 'react'
 import type { ReactNode } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import type { SceneNode, SceneSpec } from '../core/scene'
+
+/** Physically-based material — clearcoat + IBL reflections make primitives read
+ *  as real manufactured surfaces instead of flat blocks (drei/three, MIT). */
+function Mat({ color, metalness, roughness }: { color: string; metalness: number; roughness: number }) {
+  return (
+    <meshPhysicalMaterial
+      color={color}
+      metalness={metalness}
+      roughness={roughness}
+      clearcoat={0.35}
+      clearcoatRoughness={Math.min(0.6, roughness + 0.1)}
+      envMapIntensity={1.25}
+    />
+  )
+}
 
 function Gear({ r, teeth, thickness, color, metalness, roughness }: {
   r: number; teeth: number; thickness: number; color: string; metalness: number; roughness: number
@@ -11,15 +27,15 @@ function Gear({ r, teeth, thickness, color, metalness, roughness }: {
   return (
     <group>
       <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <cylinderGeometry args={[r, r, thickness, 26]} />
-        <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} />
+        <cylinderGeometry args={[r, r, thickness, 32]} />
+        <meshPhysicalMaterial color={color} metalness={metalness} roughness={roughness} clearcoat={0.35} envMapIntensity={1.25} />
       </mesh>
       {Array.from({ length: tn }).map((_, i) => {
         const a = (i / tn) * Math.PI * 2
         return (
           <mesh key={i} position={[Math.cos(a) * (r + r * 0.12), Math.sin(a) * (r + r * 0.12), 0]} rotation={[0, 0, a]} castShadow>
             <boxGeometry args={[r * 0.3, r * 0.22, thickness]} />
-            <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} />
+            <meshPhysicalMaterial color={color} metalness={metalness} roughness={roughness} clearcoat={0.35} envMapIntensity={1.25} />
           </mesh>
         )
       })}
@@ -29,20 +45,24 @@ function Gear({ r, teeth, thickness, color, metalness, roughness }: {
 
 function geom(node: SceneNode): ReactNode {
   const s = node.size ?? []
-  const mat = <meshStandardMaterial color={node.color} metalness={node.metalness} roughness={node.roughness} />
+  const mat = <Mat color={node.color} metalness={node.metalness} roughness={node.roughness} />
   switch (node.shape) {
     case 'group':
       return null
-    case 'box':
-      return <mesh castShadow receiveShadow><boxGeometry args={[s[0] ?? 0.3, s[1] ?? 0.3, s[2] ?? 0.3]} />{mat}</mesh>
+    case 'box': {
+      const w = s[0] ?? 0.3, h = s[1] ?? 0.3, d = s[2] ?? 0.3
+      // soft beveled edges read as machined parts, not flat blocks
+      const radius = Math.min(0.035, Math.min(w, h, d) * 0.24)
+      return <RoundedBox args={[w, h, d]} radius={radius} smoothness={3} castShadow receiveShadow>{mat}</RoundedBox>
+    }
     case 'cylinder':
-      return <mesh castShadow><cylinderGeometry args={[s[0] ?? 0.2, s[1] ?? (s[0] ?? 0.2), s[2] ?? 0.4, 24]} />{mat}</mesh>
+      return <mesh castShadow><cylinderGeometry args={[s[0] ?? 0.2, s[1] ?? (s[0] ?? 0.2), s[2] ?? 0.4, 32]} />{mat}</mesh>
     case 'sphere':
-      return <mesh castShadow><sphereGeometry args={[s[0] ?? 0.2, 24, 16]} />{mat}</mesh>
+      return <mesh castShadow><sphereGeometry args={[s[0] ?? 0.2, 32, 24]} />{mat}</mesh>
     case 'cone':
-      return <mesh castShadow><coneGeometry args={[s[0] ?? 0.2, s[1] ?? 0.4, 24]} />{mat}</mesh>
+      return <mesh castShadow><coneGeometry args={[s[0] ?? 0.2, s[1] ?? 0.4, 32]} />{mat}</mesh>
     case 'torus':
-      return <mesh castShadow><torusGeometry args={[s[0] ?? 0.2, s[1] ?? 0.05, 12, 24]} />{mat}</mesh>
+      return <mesh castShadow><torusGeometry args={[s[0] ?? 0.2, s[1] ?? 0.05, 16, 32]} />{mat}</mesh>
     case 'gear':
       return <Gear r={s[0] ?? 0.2} teeth={s[1] ?? 12} thickness={s[2] ?? 0.06} color={node.color} metalness={node.metalness} roughness={node.roughness} />
   }
